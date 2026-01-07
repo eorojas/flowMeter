@@ -19,7 +19,7 @@ A simulation of a multi-sensor flow meter.
   consumer.
 - **Output Method:** 
   These simulate interrupts from the ADCs by delivering samples to a 
-  - **Filter Out Data
+  - Filter Out Data
     - The output data will be filtered. There should be options to implement
     a low pass filter (details to be decided), and/or a median filter.
     - The configuration will have math function for each sensor type.
@@ -37,7 +37,12 @@ A simulation of a multi-sensor flow meter.
 
 #### Configuration
 - **JSON Config:** 
-  A file that describes the equation used for flow calculation.
+  A file, config.json
+  - Equation that describes for Flow calculation, in (F, P, T, t).
+  - Equation that describes for Flow data values, in t.
+  - Equation that describes for Pressure data values, in t.
+  - Equation that describes for Temperature data values, in t.
+  - Data value equations should include random noise.
 
 ## Goals
 1. **Primary:** Learn the Go programming language (Golang).
