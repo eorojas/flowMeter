@@ -1,0 +1,15 @@
+{
+  "sensors": {
+    "flow": {
+      "frequency_hz": 100
+    },
+    "pressure": {
+      "frequency_hz": 10,
+      "resolution_bits": 8
+    },
+    "temperature": {
+      "frequency_hz": 10
+    }
+  },
+  "flow_equation": "flow * (pressure / 100.0) * (temperature / 25.0)"
+}
