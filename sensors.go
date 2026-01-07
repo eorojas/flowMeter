@@ -17,33 +17,36 @@ const (
 // SensorData represents a standardized data structure for a sensor reading.
 type SensorData struct {
 	Type      SensorType
-	Value     float64
+	Value     uint32 // 32-bit integer to hold raw ADC values
 	Timestamp time.Time
 }
 
-// readFlow simulates reading the flow sensor.
+// readFlow simulates reading the flow sensor (24-bit).
 func readFlow() SensorData {
+	// Simulate 24-bit value (0 to 16,777,215)
 	return SensorData{
 		Type:      FlowSensor,
-		Value:     rand.Float64() * 100.0,
+		Value:     uint32(rand.Intn(16777216)),
 		Timestamp: time.Now(),
 	}
 }
 
 // readPressure simulates reading the pressure sensor (8-bit ADC).
 func readPressure() SensorData {
+	// Simulate 8-bit value (0 to 255)
 	return SensorData{
 		Type:      PressureSensor,
-		Value:     float64(rand.Intn(256)),
+		Value:     uint32(rand.Intn(256)),
 		Timestamp: time.Now(),
 	}
 }
 
-// readTemperature simulates reading the temperature sensor.
+// readTemperature simulates reading the temperature sensor (8-bit ADC).
 func readTemperature() SensorData {
+	// Simulate 8-bit value (0 to 255)
 	return SensorData{
 		Type:      TemperatureSensor,
-		Value:     20.0 + rand.Float64()*10.0,
+		Value:     uint32(rand.Intn(256)),
 		Timestamp: time.Now(),
 	}
 }

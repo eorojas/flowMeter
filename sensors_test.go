@@ -12,8 +12,9 @@ func TestReadFlow(t *testing.T) {
 		t.Errorf("Expected sensor type %s, got %s", FlowSensor, data.Type)
 	}
 
-	if data.Value < 0 || data.Value > 100 {
-		t.Errorf("Flow value %f out of expected range [0, 100]", data.Value)
+	// 24-bit max value is 16,777,215
+	if data.Value > 16777215 {
+		t.Errorf("Flow value %d out of expected 24-bit range [0, 16777215]", data.Value)
 	}
 }
 
@@ -24,13 +25,9 @@ func TestReadPressure(t *testing.T) {
 		t.Errorf("Expected sensor type %s, got %s", PressureSensor, data.Type)
 	}
 
-	// Check for 8-bit resolution limits (0-255)
-	if data.Value < 0 || data.Value > 255 {
-		t.Errorf("Pressure value %f out of expected range [0, 255]", data.Value)
-	}
-	
-	if data.Value != float64(int(data.Value)) {
-		t.Errorf("Pressure value %f should be an integer (simulating 8-bit ADC)", data.Value)
+	// 8-bit max value is 255
+	if data.Value > 255 {
+		t.Errorf("Pressure value %d out of expected 8-bit range [0, 255]", data.Value)
 	}
 }
 
@@ -41,8 +38,9 @@ func TestReadTemperature(t *testing.T) {
 		t.Errorf("Expected sensor type %s, got %s", TemperatureSensor, data.Type)
 	}
 
-	if data.Value < 20 || data.Value > 30 {
-		t.Errorf("Temperature value %f out of expected range [20, 30]", data.Value)
+	// 8-bit max value is 255
+	if data.Value > 255 {
+		t.Errorf("Temperature value %d out of expected 8-bit range [0, 255]", data.Value)
 	}
 }
 

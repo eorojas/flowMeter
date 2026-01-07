@@ -17,22 +17,22 @@ func main() {
 	// We run this for a fixed duration for demonstration
 	timeout := time.After(2 * time.Second)
 
-	fmt.Println("Listening for sensor data...")
+	fmt.Println("Listening for sensor data (Raw ADC Values)...")
 	for {
 		select {
 		case data := <-flowCh:
-			// Process Flow Data
-			fmt.Printf("[%s] %-12s: %.2f L/min\n", 
+			// Process Flow Data (24-bit)
+			fmt.Printf("[%s] %-12s: %d (24-bit)\n", 
 				data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
 
 		case data := <-pressureCh:
-			// Process Pressure Data
-			fmt.Printf("[%s] %-12s: %.0f (ADC)\n", 
+			// Process Pressure Data (8-bit)
+			fmt.Printf("[%s] %-12s: %d (8-bit)\n", 
 				data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
 
 		case data := <-tempCh:
-			// Process Temperature Data
-			fmt.Printf("[%s] %-12s: %.2f C\n", 
+			// Process Temperature Data (8-bit)
+			fmt.Printf("[%s] %-12s: %d (8-bit)\n", 
 				data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
 
 		case <-timeout:
