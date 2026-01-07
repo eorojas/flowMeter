@@ -21,7 +21,7 @@ const (
 // SensorData represents a standardized data structure for a sensor reading.
 type SensorData struct {
 	Type      SensorType
-	Value     uint32
+	Value     int32
 	Timestamp time.Time
 }
 
@@ -71,7 +71,7 @@ func evaluateEquation(equation string, t float64) (float64, error) {
 }
 
 // readSensorValue calculates the sensor value based on the equation and noise.
-func readSensorValue(config SensorConfig, startTime time.Time) (uint32, error) {
+func readSensorValue(config SensorConfig, startTime time.Time) (int32, error) {
 	elapsed := time.Since(startTime).Seconds()
 	
 	// Evaluate the base value from the equation
@@ -94,7 +94,7 @@ func readSensorValue(config SensorConfig, startTime time.Time) (uint32, error) {
 		finalValue = maxVal
 	}
 
-	return uint32(finalValue), nil
+	return int32(finalValue), nil
 }
 
 // StartSensor starts a generic sensor simulation.

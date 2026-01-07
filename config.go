@@ -14,7 +14,7 @@ type Config struct {
 }
 
 type SimulationConfig struct {
-	DefaultSamples int `json:"default_samples"`
+	DefaultSamples int32 `json:"default_samples"`
 }
 
 type SensorsConfig struct {
@@ -24,8 +24,8 @@ type SensorsConfig struct {
 }
 
 type SensorConfig struct {
-	FrequencyHz    int     `json:"frequency_hz"`
-	ResolutionBits int     `json:"resolution_bits"`
+	FrequencyHz    int32   `json:"frequency_hz"`
+	ResolutionBits int32   `json:"resolution_bits"`
 	Equation       string  `json:"equation"`
 	NoiseAmplitude float64 `json:"noise_amplitude"`
 }
