@@ -1,58 +1,70 @@
 package main
 
 import (
+	"math"
 	"testing"
 	"time"
 )
 
-func TestReadFlow(t *testing.T) {
-	data := readFlow()
-
-	if data.Type != FlowSensor {
-		t.Errorf("Expected sensor type %s, got %s", FlowSensor, data.Type)
+func TestEvaluateEquation(t *testing.T) {
+	tests := []struct {
+		equation string
+		t        float64
+		expected float64
+	}{
+		{"10 + t", 5.0, 15.0},
+		{"sin(t)", 0.0, 0.0},
+		{"t * 2", 10.0, 20.0},
 	}
 
-	// 24-bit max value is 16,777,215
-	if data.Value > 16777215 {
-		t.Errorf("Flow value %d out of expected 24-bit range [0, 16777215]", data.Value)
-	}
-}
-
-func TestReadPressure(t *testing.T) {
-	data := readPressure()
-
-	if data.Type != PressureSensor {
-		t.Errorf("Expected sensor type %s, got %s", PressureSensor, data.Type)
-	}
-
-	// 8-bit max value is 255
-	if data.Value > 255 {
-		t.Errorf("Pressure value %d out of expected 8-bit range [0, 255]", data.Value)
+	for _, test := range tests {
+		result, err := evaluateEquation(test.equation, test.t)
+		if err != nil {
+			t.Errorf("Error evaluating '%s': %v", test.equation, err)
+		}
+		if math.Abs(result-test.expected) > 0.001 {
+			t.Errorf("Equation '%s' at t=%.1f: expected %.3f, got %.3f", 
+				test.equation, test.t, test.expected, result)
+		}
 	}
 }
 
-func TestReadTemperature(t *testing.T) {
-	data := readTemperature()
-
-	if data.Type != TemperatureSensor {
-		t.Errorf("Expected sensor type %s, got %s", TemperatureSensor, data.Type)
+func TestReadSensorValue(t *testing.T) {
+	config := SensorConfig{
+		Equation:       "100",
+		NoiseAmplitude: 0.0,
+		ResolutionBits: 8,
 	}
 
-	// 8-bit max value is 255
-	if data.Value > 255 {
-		t.Errorf("Temperature value %d out of expected 8-bit range [0, 255]", data.Value)
+	val, err := readSensorValue(config, time.Now())
+	if err != nil {
+		t.Fatalf("readSensorValue failed: %v", err)
+	}
+
+	if val != 100 {
+		t.Errorf("Expected 100, got %d", val)
 	}
 }
 
-func TestStartFlowSensor(t *testing.T) {
-	ch := StartFlowSensor()
-	
+func TestStartSensor(t *testing.T) {
+	config := SensorConfig{
+		FrequencyHz:    10,
+		ResolutionBits: 8,
+		Equation:       "50",
+		NoiseAmplitude: 0.0,
+	}
+
+	ch := StartSensor(FlowSensor, config)
+
 	select {
 	case data := <-ch:
 		if data.Type != FlowSensor {
-			t.Errorf("Expected FlowSensor data from channel, got %s", data.Type)
+			t.Errorf("Expected FlowSensor, got %s", data.Type)
+		}
+		if data.Value != 50 {
+			t.Errorf("Expected value 50, got %d", data.Value)
 		}
 	case <-time.After(1 * time.Second):
-		t.Error("Timed out waiting for Flow sensor data")
+		t.Error("Timed out waiting for sensor data")
 	}
 }

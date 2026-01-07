@@ -2,39 +2,41 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"math/rand"
 	"time"
 )
 
 func main() {
-	fmt.Println("Project initialized. Starting FlowMeter Simulation with isolated sensors...")
+	fmt.Println("Project initialized. Starting FlowMeter Simulation...")
+	
+	// Seed random number generator
+	rand.Seed(time.Now().UnixNano())
 
-	// Start independent sensor simulations
-	flowCh := StartFlowSensor()
-	pressureCh := StartPressureSensor()
-	tempCh := StartTemperatureSensor()
+	// Load Configuration
+	config, err := LoadConfig("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	fmt.Println("Configuration loaded.")
 
-	// Consume data from all channels independently
-	// We run this for a fixed duration for demonstration
+	// Start independent sensor simulations using config
+	flowCh := StartSensor(FlowSensor, config.Sensors.Flow)
+	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure)
+	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature)
+
+	// Consume data
 	timeout := time.After(2 * time.Second)
 
-	fmt.Println("Listening for sensor data (Raw ADC Values)...")
+	fmt.Println("Listening for sensor data...")
 	for {
 		select {
 		case data := <-flowCh:
-			// Process Flow Data (24-bit)
-			fmt.Printf("[%s] %-12s: %d (24-bit)\n", 
-				data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
-
+			fmt.Printf("[%s] %-12s: %d\n", data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
 		case data := <-pressureCh:
-			// Process Pressure Data (8-bit)
-			fmt.Printf("[%s] %-12s: %d (8-bit)\n", 
-				data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
-
+			fmt.Printf("[%s] %-12s: %d\n", data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
 		case data := <-tempCh:
-			// Process Temperature Data (8-bit)
-			fmt.Printf("[%s] %-12s: %d (8-bit)\n", 
-				data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
-
+			fmt.Printf("[%s] %-12s: %d\n", data.Timestamp.Format("15:04:05.000"), data.Type, data.Value)
 		case <-timeout:
 			fmt.Println("Simulation finished.")
 			return

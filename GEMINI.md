@@ -50,7 +50,8 @@ A simulation of a multi-sensor flow meter.
 
 ## Technology Stack
 - **Language:** Go (Latest stable)
-- **Key Libraries:** (To be added, e.g., Cobra, Gin)
+- **Key Libraries:** 
+    - `github.com/Knetic/govaluate` (Expression evaluation)
 
 ## Coding Preferences & Conventions
 - **Style:** Idiomatic Go (Effective Go standards).
@@ -62,6 +63,10 @@ A simulation of a multi-sensor flow meter.
 - [x] Initialize Go module (`go mod init`)
 - [x] Create basic "Hello World" entry point
 - [ ] Implement core logic
+    - [x] Define JSON configuration structure
+    - [x] Integrate Expression Engine for Sensor Values
+    - [ ] Implement Filtering Logic
+    - [ ] Implement Output Handlers
 - [ ] Add unit tests
 - [ ] Refactor for better structure
 

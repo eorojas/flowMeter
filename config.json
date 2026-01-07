@@ -1,17 +1,39 @@
 {
+  "simulation": {
+    "default_samples": 10000
+  },
   "sensors": {
     "flow": {
       "frequency_hz": 100,
-      "resolution_bits": 24
+      "resolution_bits": 24,
+      "equation": "50 + 10 * sin(t)",
+      "noise_amplitude": 2.0
     },
     "pressure": {
       "frequency_hz": 10,
-      "resolution_bits": 8
+      "resolution_bits": 8,
+      "equation": "100 + 20 * cos(t/2)",
+      "noise_amplitude": 5.0
     },
     "temperature": {
       "frequency_hz": 10,
-      "resolution_bits": 8
+      "resolution_bits": 8,
+      "equation": "25 + 5 * sin(t/5)",
+      "noise_amplitude": 1.0
     }
   },
-  "flow_equation": "flow * (pressure / 255.0) * (temperature / 255.0)"
+  "processing": {
+    "flow_equation": "flow * (pressure / 255.0) * (temperature / 255.0)",
+    "filters": [
+      {
+        "type": "low_pass",
+        "target": "pressure",
+        "alpha": 0.1
+      }
+    ]
+  },
+  "output": {
+    "type": "file", 
+    "target": "output.json"
+  }
 }
