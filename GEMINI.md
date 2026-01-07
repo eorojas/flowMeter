@@ -17,6 +17,23 @@ A simulation of a multi-sensor flow meter.
 - **Sample Method:** 
   These simulate interrupts from the ADCs by delivering samples to a 
   consumer.
+- **Output Method:** 
+  These simulate interrupts from the ADCs by delivering samples to a 
+  - **Filter Out Data
+    - The output data will be filtered. There should be options to implement
+    a low pass filter (details to be decided), and/or a median filter.
+    - The configuration will have math function for each sensor type.
+    - There will be the ability to add noise on top of the sensor values.
+    - A each flow value we will calculate the current filtered temperature and 
+        pressure values, which will be allied to the flow equation.
+    - The calculated flow rate (CFRate) (and any ancillary data) will be packaged 
+        and push to a configured end-point, e.g., a file or network end-point.
+    - For testing the number of samples should be command-line configurable
+        and default to 10000.
+- **Receiver Method:** 
+    Receives the data sent by the Output Method, i.e., the CRRate data.
+    - There are two types of Receiver methods, configurable, file
+        and network (HTTP, CSV-receiver, other?).
 
 #### Configuration
 - **JSON Config:** 
