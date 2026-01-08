@@ -22,9 +22,9 @@ func main() {
 	var pressureVal int
 	flag.IntVarP(&pressureVal, "pressure-override-value", "P", 100, "Override pressure value (int32).")
 
-	// Sample count flag
+	// Sample count flag - default to -1 to detect if it was passed
 	var sampleCountOverride int
-	flag.IntVarP(&sampleCountOverride, "samples", "n", 10000, "Number of samples to simulate.")
+	flag.IntVarP(&sampleCountOverride, "samples", "n", -1, "Number of samples to simulate.")
 
 	flag.Parse()
 
@@ -40,9 +40,13 @@ func main() {
 	}
 	fmt.Printf("Configuration loaded from %s.\n", configPath)
 
-	// Apply sample count override (always use the flag value, which defaults to 10000)
-	config.Simulation.DefaultSamples = int32(sampleCountOverride)
-	fmt.Printf("Samples to simulate: %d\n", config.Simulation.DefaultSamples)
+	// Apply sample count override ONLY if it was passed
+	if flag.Lookup("samples").Changed {
+		config.Simulation.DefaultSamples = int32(sampleCountOverride)
+		fmt.Printf("Sample count override: %d\n", config.Simulation.DefaultSamples)
+	} else {
+		fmt.Printf("Using config default samples: %d\n", config.Simulation.DefaultSamples)
+	}
 
 	// Initialize Processor
 	processor := NewProcessor(config.Processing)
@@ -70,9 +74,6 @@ func main() {
 	// Start independent sensor simulations using config
 	flowCh := StartSensor(FlowSensor, config.Sensors.Flow)
 	
-	// Since temperature and pressure are ALWAYS overridden now, we don't start their sensor simulations.
-	// This simplifies the logic and follows the requirement to use the flag values (defaults).
-
 	// Consume data
 	// Calculate run duration based on samples and flow frequency
 	runSecs := time.Duration(config.Simulation.DefaultSamples / config.Sensors.Flow.FrequencyHz)
