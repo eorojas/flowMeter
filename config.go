@@ -34,8 +34,9 @@ type SensorConfig struct {
 }
 
 type ProcessingConfig struct {
-	FlowEquation string         `json:"flow_equation"`
-	Filters      []FilterConfig `json:"filters"`
+	FlowEquation      string         `json:"flow_equation"`
+	DefaultFilterType string         `json:"default_filter_type"` // "low_pass" or "median"
+	Filters           []FilterConfig `json:"filters"`
 }
 
 type FilterConfig struct {
@@ -76,6 +77,11 @@ func (c *Config) Validate() error {
 	}
 	if c.Simulation.DefaultTemperature < 10 || c.Simulation.DefaultTemperature > 250 {
 		return fmt.Errorf("default_temperature must be between 10 and 250, got %d", c.Simulation.DefaultTemperature)
+	}
+	if c.Processing.DefaultFilterType != "" {
+		if c.Processing.DefaultFilterType != "low_pass" && c.Processing.DefaultFilterType != "median" {
+			return fmt.Errorf("default_filter_type must be 'low_pass' or 'median', got %s", c.Processing.DefaultFilterType)
+		}
 	}
 	return nil
 }

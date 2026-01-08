@@ -26,6 +26,7 @@
   },
   "processing": {
     "flow_equation": "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)",
+    "default_filter_type": "low_pass",
     "filters": [
       {
         "type": "low_pass",

@@ -46,6 +46,10 @@ func main() {
 	var sampleCountOverride int
 	flag.IntVarP(&sampleCountOverride, "samples", "n", -1, "Number of samples to simulate.")
 
+	// Filter type flag
+	var useMedian bool
+	flag.BoolVarP(&useMedian, "median", "m", false, "Use median filter instead of default (low_pass).")
+
 	flag.Parse()
 
 	fmt.Println("Project initialized. Starting FlowMeter Simulation...")
@@ -62,9 +66,6 @@ func main() {
 	}
 
 	// Apply Temperature Override by rewriting the equation IF CHANGED from default
-	// Note: We used the config value as the default, so checking .Changed works if the user passed a flag.
-	// But if the user passed the SAME value as default, .Changed is true but logic is same.
-	// We want to force the constant equation if the flag was provided.
 	if flag.Lookup("temp-override-value").Changed {
 		config.Sensors.Temperature.Equation = strconv.Itoa(tempVal)
 		fmt.Printf("Temperature equation overridden to constant: %s\n", config.Sensors.Temperature.Equation)
@@ -74,6 +75,23 @@ func main() {
 	if flag.Lookup("pressure-override-value").Changed {
 		config.Sensors.Pressure.Equation = strconv.Itoa(pressureVal)
 		fmt.Printf("Pressure equation overridden to constant: %s\n", config.Sensors.Pressure.Equation)
+	}
+
+	// Determine Filter Type
+	filterType := config.Processing.DefaultFilterType
+	if filterType == "" {
+		filterType = "low_pass" // Fallback default
+	}
+	if useMedian {
+		filterType = "median"
+		fmt.Println("Filter type overridden to: median")
+	} else {
+		fmt.Printf("Using configured filter type: %s\n", filterType)
+	}
+
+	// Apply filter type to all filters
+	for i := range config.Processing.Filters {
+		config.Processing.Filters[i].Type = filterType
 	}
 
 	// Initialize Processor
