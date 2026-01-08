@@ -23,7 +23,7 @@ type SensorData struct {
 }
 
 // readSensorValue calculates the sensor value based on the equation and noise.
-func readSensorValue(config SensorConfig, startTime time.Time, params map[string]interface{}) (int32, error) {
+func readSensorValue(config SensorConfig, startTime time.Time, params map[string]interface{}, r *rand.Rand) (int32, error) {
 	elapsed := time.Since(startTime).Seconds()
 	
 	// Prepare parameters for the equation
@@ -43,10 +43,10 @@ func readSensorValue(config SensorConfig, startTime time.Time, params map[string
 	if config.NoiseDistribution == "normal" {
 		// Normal distribution (Gaussian): Mean 0, StdDev 1 * Amplitude
 		// This treats Amplitude as the standard deviation
-		noise = rand.NormFloat64() * config.NoiseAmplitude
+		noise = r.NormFloat64() * config.NoiseAmplitude
 	} else {
 		// Default: Uniform distribution [-Amplitude, +Amplitude]
-		noise = (rand.Float64()*2 - 1) * config.NoiseAmplitude
+		noise = (r.Float64()*2 - 1) * config.NoiseAmplitude
 	}
 	finalValue := baseValue + noise
 
@@ -64,16 +64,18 @@ func readSensorValue(config SensorConfig, startTime time.Time, params map[string
 
 // StartSensor starts a generic sensor simulation.
 // It returns a channel for that specific sensor type.
-func StartSensor(sType SensorType, config SensorConfig, params map[string]interface{}) <-chan SensorData {
+func StartSensor(sType SensorType, config SensorConfig, params map[string]interface{}, seed int64) <-chan SensorData {
 	ch := make(chan SensorData)
 	startTime := time.Now()
+	// Create local random source
+	r := rand.New(rand.NewSource(seed))
 
 	go func() {
 		ticker := time.NewTicker(time.Second / time.Duration(config.FrequencyHz))
 		defer ticker.Stop()
 
 		for range ticker.C {
-			val, err := readSensorValue(config, startTime, params)
+			val, err := readSensorValue(config, startTime, params, r)
 			if err != nil {
 				fmt.Printf("Error reading %s: %v\n", sType, err)
 				continue

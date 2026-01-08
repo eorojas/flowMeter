@@ -50,12 +50,25 @@ func main() {
 	var useMedian bool
 	flag.BoolVarP(&useMedian, "median", "m", false, "Use median filter instead of default (low_pass).")
 
+	// Random seed flag
+	var randomSeed bool
+	flag.BoolVarP(&randomSeed, "random-seed", "r", false, "Use time-based random seed (default is deterministic seed 0).")
+
 	flag.Parse()
 
 	fmt.Println("Project initialized. Starting FlowMeter Simulation...")
 
 	// Seed random number generator
-	rand.Seed(time.Now().UnixNano())
+	var baseSeed int64
+	if randomSeed {
+		baseSeed = time.Now().UnixNano()
+		fmt.Printf("Using random base seed: %d\n", baseSeed)
+	} else {
+		baseSeed = 0
+		fmt.Println("Using deterministic base seed 0.")
+	}
+	// Note: We still seed the global rand just in case, but sensors use local Rand
+	rand.Seed(baseSeed)
 
 	// Apply sample count override ONLY if it was passed
 	if flag.Lookup("samples").Changed {
@@ -109,14 +122,14 @@ func main() {
 	defer outputHandler.Close()
 
 	// Start independent sensor simulations using config
-	// All sensors are started, even if overridden, so that noise/filtering logic runs.
 	refParams := map[string]interface{}{
 		"RefP": float64(config.Simulation.DefaultPressure),
 		"RefT": float64(config.Simulation.DefaultTemperature),
 	}
-	flowCh := StartSensor(FlowSensor, config.Sensors.Flow, refParams)
-	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure, refParams)
-	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature, refParams)
+	// Use unique seeds derived from baseSeed for each sensor
+	flowCh := StartSensor(FlowSensor, config.Sensors.Flow, refParams, baseSeed)
+	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure, refParams, baseSeed+1)
+	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature, refParams, baseSeed+2)
 
 	// Consume data
 	// Calculate run duration based on samples and flow frequency

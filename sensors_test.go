@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -36,8 +37,9 @@ func TestReadSensorValue(t *testing.T) {
 		NoiseAmplitude: 0.0,
 		ResolutionBits: 8,
 	}
+	r := rand.New(rand.NewSource(0))
 
-	val, err := readSensorValue(config, time.Now(), nil)
+	val, err := readSensorValue(config, time.Now(), nil, r)
 	if err != nil {
 		t.Fatalf("readSensorValue failed: %v", err)
 	}
@@ -55,7 +57,7 @@ func TestStartSensor(t *testing.T) {
 		NoiseAmplitude: 0.0,
 	}
 
-	ch := StartSensor(FlowSensor, config, nil)
+	ch := StartSensor(FlowSensor, config, nil, 0)
 
 	select {
 	case data := <-ch:
