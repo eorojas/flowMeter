@@ -159,3 +159,43 @@ func (p *Processor) ProcessFlow(raw int32) int32 {
 	}
 	return val
 }
+
+// CalculateFlow computes the final flow rate using the configured equation.
+// It uses the latest filtered pressure and temperature values from the processor state.
+//
+// Assumptions:
+// 1. Input sensors (Flow, Pressure, Temperature) are within their configured bit-depths.
+// 2. The provided equation results in a value that fits within int32 range.
+// 3. Intermediate floating-point calculations in the expression engine are used to handle
+//    scaling (e.g. / 255.0) but the final result is cast to int32 with overflow checking.
+func (p *Processor) CalculateFlow(equation string, rawFlow int32, timeSecs float64) (int32, error) {
+	// Filter the raw flow first
+	filteredFlow := p.ProcessFlow(rawFlow)
+
+	// Prepare parameters
+	// We pass values as float64 to the engine to support division scaling (e.g. / 255.0)
+	params := map[string]interface{}{
+		"flow":        float64(filteredFlow),
+		"pressure":    float64(p.LatestPressure),
+		"temperature": float64(p.LatestTemperature),
+		"t":           timeSecs,
+		// Short aliases
+		"F": float64(filteredFlow),
+		"P": float64(p.LatestPressure),
+		"T": float64(p.LatestTemperature),
+	}
+
+	resultFloat, err := EvaluateEquation(equation, params)
+	if err != nil {
+		return 0, err
+	}
+
+	// Explicit Overflow Check for int32
+	// MaxInt32 = 2147483647
+	// MinInt32 = -2147483648
+	if resultFloat > 2147483647 || resultFloat < -2147483648 {
+		return 0, ErrOverflow
+	}
+
+	return int32(resultFloat), nil
+}

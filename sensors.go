@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"time"
-
-	"github.com/Knetic/govaluate"
 )
 
 // SensorType defines the category of the sensor.
@@ -25,57 +22,15 @@ type SensorData struct {
 	Timestamp time.Time
 }
 
-// getFunctions returns a map of supported math functions for govaluate.
-func getFunctions() map[string]govaluate.ExpressionFunction {
-	return map[string]govaluate.ExpressionFunction{
-		"sin": func(args ...interface{}) (interface{}, error) {
-			val := args[0].(float64)
-			return math.Sin(val), nil
-		},
-		"cos": func(args ...interface{}) (interface{}, error) {
-			val := args[0].(float64)
-			return math.Cos(val), nil
-		},
-		"tan": func(args ...interface{}) (interface{}, error) {
-			val := args[0].(float64)
-			return math.Tan(val), nil
-		},
-		"sqrt": func(args ...interface{}) (interface{}, error) {
-			val := args[0].(float64)
-			return math.Sqrt(val), nil
-		},
-	}
-}
-
-// evaluateEquation parses and evaluates the sensor equation at time t (seconds).
-func evaluateEquation(equation string, t float64) (float64, error) {
-	functions := getFunctions()
-	expression, err := govaluate.NewEvaluableExpressionWithFunctions(equation, functions)
-	if err != nil {
-		return 0, err
-	}
-
-	parameters := make(map[string]interface{})
-	parameters["t"] = t
-
-	result, err := expression.Evaluate(parameters)
-	if err != nil {
-		return 0, err
-	}
-
-	// Helper to convert result to float64 safely
-	if val, ok := result.(float64); ok {
-		return val, nil
-	}
-	return 0, fmt.Errorf("equation result is not a float64")
-}
-
 // readSensorValue calculates the sensor value based on the equation and noise.
 func readSensorValue(config SensorConfig, startTime time.Time) (int32, error) {
 	elapsed := time.Since(startTime).Seconds()
 	
 	// Evaluate the base value from the equation
-	baseValue, err := evaluateEquation(config.Equation, elapsed)
+	parameters := map[string]interface{}{
+		"t": elapsed,
+	}
+	baseValue, err := EvaluateEquation(config.Equation, parameters)
 	if err != nil {
 		return 0, err
 	}

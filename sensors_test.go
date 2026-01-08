@@ -18,7 +18,8 @@ func TestEvaluateEquation(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result, err := evaluateEquation(test.equation, test.t)
+		params := map[string]interface{}{"t": test.t}
+		result, err := EvaluateEquation(test.equation, params)
 		if err != nil {
 			t.Errorf("Error evaluating '%s': %v", test.equation, err)
 		}

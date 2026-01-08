@@ -62,12 +62,12 @@ A simulation of a multi-sensor flow meter.
 ## Roadmap
 - [x] Initialize Go module (`go mod init`)
 - [x] Create basic "Hello World" entry point
-- [ ] Implement core logic
+- [x] Implement core logic
     - [x] Define JSON configuration structure
     - [x] Integrate Expression Engine for Sensor Values
-    - [ ] Implement Filtering Logic
-    - [ ] Implement Output Handlers
-- [ ] Add unit tests
+    - [x] Implement Filtering Logic
+    - [x] Implement Output Handlers
+- [x] Add unit tests
 - [ ] Refactor for better structure
 
 ## Useful Commands
@@ -77,6 +77,6 @@ A simulation of a multi-sensor flow meter.
 
 ## Misc Requirements
 - Argument parsing
-    - select config file.
-    - override temperature
-    - override pressure
+    - [x] select config file.
+    - [x] override temperature
+    - [x] override pressure

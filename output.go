@@ -1,0 +1,101 @@
+package main
+
+import (
+	"encoding/csv"
+	"fmt"
+	"os"
+	"strconv"
+	"time"
+)
+
+// OutputData represents the final calculated packet to be sent to receivers.
+type OutputData struct {
+	Timestamp      time.Time `json:"timestamp"`
+	RawFlow        int32     `json:"raw_flow"`
+	Pressure       int32     `json:"pressure"`
+	Temperature    int32     `json:"temperature"`
+	CalculatedFlow int32     `json:"calculated_flow"`
+}
+
+// OutputHandler defines the interface for different output destinations.
+type OutputHandler interface {
+	Write(data OutputData) error
+	Close() error
+}
+
+// FileOutput implements OutputHandler for CSV file storage.
+type FileOutput struct {
+	file   *os.File
+	writer *csv.Writer
+}
+
+func NewFileOutput(filename string) (*FileOutput, error) {
+	file, err := os.Create(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	writer := csv.NewWriter(file)
+	// Write CSV Header
+	header := []string{"timestamp", "raw_flow", "pressure", "temperature", "calculated_flow"}
+	if err := writer.Write(header); err != nil {
+		file.Close()
+		return nil, err
+	}
+	writer.Flush()
+
+	return &FileOutput{file: file, writer: writer}, nil
+}
+
+func (f *FileOutput) Write(data OutputData) error {
+	record := []string{
+		data.Timestamp.Format(time.RFC3339Nano),
+		strconv.FormatInt(int64(data.RawFlow), 10),
+		strconv.FormatInt(int64(data.Pressure), 10),
+		strconv.FormatInt(int64(data.Temperature), 10),
+		strconv.FormatInt(int64(data.CalculatedFlow), 10),
+	}
+	if err := f.writer.Write(record); err != nil {
+		return err
+	}
+	f.writer.Flush()
+	return nil
+}
+
+func (f *FileOutput) Close() error {
+	f.writer.Flush()
+	return f.file.Close()
+}
+
+// ConsoleOutput implements OutputHandler for stdout printing.
+type ConsoleOutput struct{}
+
+func NewConsoleOutput() *ConsoleOutput {
+	return &ConsoleOutput{}
+}
+
+func (c *ConsoleOutput) Write(data OutputData) error {
+	fmt.Printf("[%s] Flow: %8d | P: %3d | T: %3d | Calc: %d\n",
+		data.Timestamp.Format("15:04:05.000"),
+		data.RawFlow,
+		data.Pressure,
+		data.Temperature,
+		data.CalculatedFlow)
+	return nil
+}
+
+func (c *ConsoleOutput) Close() error {
+	return nil
+}
+
+// GetOutputHandler is a factory function to create the configured handler.
+func GetOutputHandler(config OutputConfig) (OutputHandler, error) {
+	switch config.Type {
+	case "file":
+		return NewFileOutput(config.Target)
+	case "console":
+		return NewConsoleOutput(), nil
+	default:
+		return NewConsoleOutput(), nil
+	}
+}
