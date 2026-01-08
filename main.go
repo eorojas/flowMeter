@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -48,21 +49,24 @@ func main() {
 		fmt.Printf("Using config default samples: %d\n", config.Simulation.DefaultSamples)
 	}
 
+	// Apply Temperature Override by rewriting the equation
+	if flag.Lookup("temp-override-value").Changed {
+		config.Sensors.Temperature.Equation = strconv.Itoa(tempVal)
+		fmt.Printf("Temperature equation overridden to constant: %s\n", config.Sensors.Temperature.Equation)
+	}
+
+	// Apply Pressure Override by rewriting the equation
+	if flag.Lookup("pressure-override-value").Changed {
+		config.Sensors.Pressure.Equation = strconv.Itoa(pressureVal)
+		fmt.Printf("Pressure equation overridden to constant: %s\n", config.Sensors.Pressure.Equation)
+	}
+
 	// Initialize Processor
 	processor := NewProcessor(config.Processing)
-
-	// Always apply overrides (using default values if flags not passed)
-	to := TempOverride{
-		Value: int32(tempVal),
-	}
-	processor.ApplyTempOverride(to)
-	fmt.Printf("Temperature override applied: Value=%d\n", to.Value)
-
-	po := PressureOverride{
-		Value: int32(pressureVal),
-	}
-	processor.ApplyPressureOverride(po)
-	fmt.Printf("Pressure override applied: Value=%d\n", po.Value)
+	// Initialize with default or overridden values so they don't start at zero
+	processor.LatestTemperature = int32(tempVal)
+	processor.LatestPressure = int32(pressureVal)
+	fmt.Printf("Initial state: Temperature=%d, Pressure=%d\n", processor.LatestTemperature, processor.LatestPressure)
 
 	// Initialize Output Handler
 	outputHandler, err := GetOutputHandler(config.Output)
@@ -72,8 +76,11 @@ func main() {
 	defer outputHandler.Close()
 
 	// Start independent sensor simulations using config
+	// All sensors are started, even if overridden, so that noise/filtering logic runs.
 	flowCh := StartSensor(FlowSensor, config.Sensors.Flow)
-	
+	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure)
+	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature)
+
 	// Consume data
 	// Calculate run duration based on samples and flow frequency
 	runSecs := time.Duration(config.Simulation.DefaultSamples / config.Sensors.Flow.FrequencyHz)
@@ -87,6 +94,12 @@ func main() {
 
 	for {
 		select {
+		case data := <-pressureCh:
+			processor.UpdatePressure(data.Value)
+
+		case data := <-tempCh:
+			processor.UpdateTemperature(data.Value)
+
 		case data := <-flowCh:
 			sampleCount++
 			// Calculate elapsed time for the equation
