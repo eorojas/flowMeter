@@ -1,35 +1,41 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"math/rand"
 	"time"
+
+	flag "github.com/spf13/pflag"
 )
 
 func main() {
-	// Define command-line flags
-	configPath := flag.String("config", "config.json", "Path to the configuration file")
+	// Define command-line flags using pflag
+	var configPath string
+	flag.StringVarP(&configPath, "config", "c", "config.json", "Path to the configuration file")
 
 	// Temp override flags
-	tempVal := flag.Int("temp-override-value", 25, "Override temperature value (int32). Default is mid-range.")
-	tempSrc := flag.String("temp-override-source", "cli", "Source of the temperature override.")
+	var tempVal int
+	var tempSrc string
+	flag.IntVarP(&tempVal, "temp-override-value", "T", 25, "Override temperature value (int32). Default is mid-range.")
+	flag.StringVar(&tempSrc, "temp-override-source", "cli", "Source of the temperature override.")
 
 	// Pressure override flags
-	pressureVal := flag.Int("pressure-override-value", 100, "Override pressure value (int32). Default is mid-range.")
-	pressureSrc := flag.String("pressure-override-source", "cli", "Source of the pressure override.")
+	var pressureVal int
+	var pressureSrc string
+	flag.IntVarP(&pressureVal, "pressure-override-value", "P", 100, "Override pressure value (int32). Default is mid-range.")
+	flag.StringVar(&pressureSrc, "pressure-override-source", "cli", "Source of the pressure override.")
+
+	// Sample count flag
+	var sampleCountOverride int
+	flag.IntVarP(&sampleCountOverride, "samples", "n", -1, "Override number of samples to simulate.")
 
 	flag.Parse()
 
 	// Determine active overrides based on passed flags
-	setFlags := make(map[string]bool)
-	flag.Visit(func(f *flag.Flag) {
-		setFlags[f.Name] = true
-	})
-
-	overrideTempActive := setFlags["temp-override-value"] || setFlags["temp-override-source"]
-	overridePressureActive := setFlags["pressure-override-value"] || setFlags["pressure-override-source"]
+	// pflag provides a simple way to check if a flag was changed
+	overrideTempActive := flag.Lookup("temp-override-value").Changed || flag.Lookup("temp-override-source").Changed
+	overridePressureActive := flag.Lookup("pressure-override-value").Changed || flag.Lookup("pressure-override-source").Changed
 
 	fmt.Println("Project initialized. Starting FlowMeter Simulation...")
 
@@ -37,11 +43,17 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	// Load Configuration
-	config, err := LoadConfig(*configPath)
+	config, err := LoadConfig(configPath)
 	if err != nil {
-		log.Fatalf("Failed to load config from %s: %v", *configPath, err)
+		log.Fatalf("Failed to load config from %s: %v", configPath, err)
 	}
-	fmt.Printf("Configuration loaded from %s.\n", *configPath)
+	fmt.Printf("Configuration loaded from %s.\n", configPath)
+
+	// Apply sample count override if provided
+	if sampleCountOverride != -1 {
+		config.Simulation.DefaultSamples = int32(sampleCountOverride)
+		fmt.Printf("Sample count override: %d\n", config.Simulation.DefaultSamples)
+	}
 
 	// Initialize Processor
 	processor := NewProcessor(config.Processing)
@@ -49,8 +61,8 @@ func main() {
 	// Apply overrides if provided
 	if overrideTempActive {
 		to := TempOverride{
-			Value:  int32(*tempVal),
-			Source: *tempSrc,
+			Value:  int32(tempVal),
+			Source: tempSrc,
 		}
 		processor.ApplyTempOverride(to)
 		fmt.Printf("Temperature override applied: Value=%d, Source=%s\n", to.Value, to.Source)
@@ -58,8 +70,8 @@ func main() {
 
 	if overridePressureActive {
 		po := PressureOverride{
-			Value:  int32(*pressureVal),
-			Source: *pressureSrc,
+			Value:  int32(pressureVal),
+			Source: pressureSrc,
 		}
 		processor.ApplyPressureOverride(po)
 		fmt.Printf("Pressure override applied: Value=%d, Source=%s\n", po.Value, po.Source)
@@ -89,11 +101,15 @@ func main() {
 	// Consume data
 	// Calculate run duration based on samples and flow frequency
 	runSecs := time.Duration(config.Simulation.DefaultSamples / config.Sensors.Flow.FrequencyHz)
-	timeout := time.After(runSecs * time.Second)
+	// Add a small buffer to ensure we get the last sample if timing is tight
+	timeout := time.After(runSecs*time.Second + 100*time.Millisecond)
 	startTime := time.Now()
 
 	fmt.Println("Listening for sensor data...")
 	var sampleCount int64
+	// Limit loop by sample count as well
+	maxSamples := int64(config.Simulation.DefaultSamples)
+
 	for {
 		select {
 		case data, ok := <-pressureCh:
@@ -131,8 +147,13 @@ func main() {
 				log.Printf("Error writing output: %v", err)
 			}
 
+			if sampleCount >= maxSamples {
+				fmt.Println("Simulation finished (sample limit reached).")
+				return
+			}
+
 		case <-timeout:
-			fmt.Println("Simulation finished.")
+			fmt.Println("Simulation finished (timeout).")
 			return
 		}
 	}
