@@ -37,7 +37,7 @@ func TestReadSensorValue(t *testing.T) {
 		ResolutionBits: 8,
 	}
 
-	val, err := readSensorValue(config, time.Now())
+	val, err := readSensorValue(config, time.Now(), nil)
 	if err != nil {
 		t.Fatalf("readSensorValue failed: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestStartSensor(t *testing.T) {
 		NoiseAmplitude: 0.0,
 	}
 
-	ch := StartSensor(FlowSensor, config)
+	ch := StartSensor(FlowSensor, config, nil)
 
 	select {
 	case data := <-ch:

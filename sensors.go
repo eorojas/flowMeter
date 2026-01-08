@@ -23,13 +23,16 @@ type SensorData struct {
 }
 
 // readSensorValue calculates the sensor value based on the equation and noise.
-func readSensorValue(config SensorConfig, startTime time.Time) (int32, error) {
+func readSensorValue(config SensorConfig, startTime time.Time, params map[string]interface{}) (int32, error) {
 	elapsed := time.Since(startTime).Seconds()
 	
-	// Evaluate the base value from the equation
-	parameters := map[string]interface{}{
-		"t": elapsed,
+	// Prepare parameters for the equation
+	parameters := make(map[string]interface{})
+	for k, v := range params {
+		parameters[k] = v
 	}
+	parameters["t"] = elapsed
+	
 	baseValue, err := EvaluateEquation(config.Equation, parameters)
 	if err != nil {
 		return 0, err
@@ -54,7 +57,7 @@ func readSensorValue(config SensorConfig, startTime time.Time) (int32, error) {
 
 // StartSensor starts a generic sensor simulation.
 // It returns a channel for that specific sensor type.
-func StartSensor(sType SensorType, config SensorConfig) <-chan SensorData {
+func StartSensor(sType SensorType, config SensorConfig, params map[string]interface{}) <-chan SensorData {
 	ch := make(chan SensorData)
 	startTime := time.Now()
 
@@ -63,7 +66,7 @@ func StartSensor(sType SensorType, config SensorConfig) <-chan SensorData {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			val, err := readSensorValue(config, startTime)
+			val, err := readSensorValue(config, startTime, params)
 			if err != nil {
 				fmt.Printf("Error reading %s: %v\n", sType, err)
 				continue

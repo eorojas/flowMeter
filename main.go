@@ -91,9 +91,14 @@ func main() {
 	defer outputHandler.Close()
 
 	// Start independent sensor simulations using config
-	flowCh := StartSensor(FlowSensor, config.Sensors.Flow)
-	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure)
-	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature)
+	// All sensors are started, even if overridden, so that noise/filtering logic runs.
+	refParams := map[string]interface{}{
+		"RefP": float64(config.Simulation.DefaultPressure),
+		"RefT": float64(config.Simulation.DefaultTemperature),
+	}
+	flowCh := StartSensor(FlowSensor, config.Sensors.Flow, refParams)
+	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure, refParams)
+	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature, refParams)
 
 	// Consume data
 	// Calculate run duration based on samples and flow frequency
