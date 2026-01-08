@@ -52,6 +52,7 @@ A simulation of a multi-sensor flow meter.
 - **Language:** Go (Latest stable)
 - **Key Libraries:** 
     - `github.com/Knetic/govaluate` (Expression evaluation)
+    - `github.com/go-json-experiment/json` (JSON v2)
 
 ## Coding Preferences & Conventions
 - **Style:** Idiomatic Go (Effective Go standards).
