@@ -90,18 +90,6 @@ func (f *MedianFilter) Process(value int32) int32 {
 	return sorted[mid]
 }
 
-// TempOverride defines a manual override for temperature sensor.
-type TempOverride struct {
-	Value  int32
-	Source string
-}
-
-// PressureOverride defines a manual override for pressure sensor.
-type PressureOverride struct {
-	Value  int32
-	Source string
-}
-
 // Processor maintains the state of the sensors and applies filters.
 type Processor struct {
 	// Latest filtered values
@@ -143,16 +131,6 @@ func NewProcessor(config ProcessingConfig) *Processor {
 		}
 	}
 	return p
-}
-
-// ApplyTempOverride sets the latest temperature from an override struct.
-func (p *Processor) ApplyTempOverride(override TempOverride) {
-	p.LatestTemperature = override.Value
-}
-
-// ApplyPressureOverride sets the latest pressure from an override struct.
-func (p *Processor) ApplyPressureOverride(override PressureOverride) {
-	p.LatestPressure = override.Value
 }
 
 // UpdatePressure processes a raw pressure value through filters and updates state.

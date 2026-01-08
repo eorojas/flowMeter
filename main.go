@@ -17,7 +17,7 @@ func main() {
 
 	// Temp override flags
 	var tempVal int
-	flag.IntVarP(&tempVal, "temp-override-value", "T", 25, "Override temperature value (int32).")
+	flag.IntVarP(&tempVal, "temp-override-value", "T", 125, "Override temperature value (int32).")
 
 	// Pressure override flags
 	var pressureVal int

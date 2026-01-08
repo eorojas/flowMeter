@@ -6,8 +6,9 @@ import (
 )
 
 func TestCalculateFlowAccuracy(t *testing.T) {
-	// Formula: F * (P / 255) * (T / 255)
-	// Note: P and T are typically 8-bit (0-255). F is 24-bit.
+	// Formula: F + F * ((P - 100) / 255) * ((T - 125) / 255)
+	
+	equation := "F + F * ((P - 100) / 255) * ((T - 125) / 255)"
 
 	tests := []struct {
 		name          string
@@ -15,70 +16,62 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 		pressure      int32
 		temperature   int32
 		expected      int32
-		tolerance     int32 // Allow +/- 1 due to int casting/float precision
+		tolerance     int32 
 	}{
+		{
+			name:        "Reference Point (No Deviation)",
+			flow:        1000,
+			pressure:    100,
+			temperature: 125,
+			expected:    1000, // 1000 + 1000 * 0 * 0
+			tolerance:   0,
+		},
 		{
 			name:        "Max Values",
 			flow:        1000,
 			pressure:    255,
 			temperature: 255,
-			expected:    1000, // 1000 * 1 * 1
-			tolerance:   0,
-		},
-		{
-			name:        "Zero Flow",
-			flow:        0,
-			pressure:    100,
-			temperature: 100,
-			expected:    0,
-			tolerance:   0,
-		},
-		{
-			name:        "Zero Pressure",
-			flow:        1000,
-			pressure:    0,
-			temperature: 255,
-			expected:    0,
-			tolerance:   0,
-		},
-		{
-			name:        "Half Scale",
-			flow:        5000,
-			pressure:    127,
-			temperature: 127,
-			// 5000 * (127/255) * (127/255)
-			// 5000 * 0.498039 * 0.498039
-			// 5000 * 0.248043 ~= 1240.21
-			expected:    1240,
+			// 1000 + 1000 * (155/255) * (130/255)
+			// 1000 + 1000 * 0.6078 * 0.5098
+			// 1000 + 1000 * 0.3098 ~= 1309.8
+			expected:    1310,
 			tolerance:   1,
 		},
 		{
-			name:        "Typical Operating Point",
-			flow:        5000,
-			pressure:    100,
-			temperature: 25,
-			// 5000 * (100/255) * (25/255)
-			// 5000 * 0.39215 * 0.09803
-			// 5000 * 0.038446 ~= 192.23
-			expected:    192,
+			name:        "Zero Values",
+			flow:        1000,
+			pressure:    0,
+			temperature: 0,
+			// 1000 + 1000 * (-100/255) * (-125/255)
+			// 1000 + 1000 * (-0.3921) * (-0.4901)
+			// 1000 + 1000 * 0.1922 ~= 1192.2
+			expected:    1192,
+			tolerance:   1,
+		},
+		{
+			name:        "Negative Deviation (Pressure)",
+			flow:        1000,
+			pressure:    50,
+			temperature: 255,
+			// 1000 + 1000 * (-50/255) * (130/255)
+			// 1000 + 1000 * -0.196 * 0.5098
+			// 1000 + 1000 * -0.1 ~= 900
+			expected:    900,
 			tolerance:   1,
 		},
 	}
 
-	// Setup a processor with no filters for basic equation testing
 	config := ProcessingConfig{
-		FlowEquation: "F * (P / 255) * (T / 255)",
+		FlowEquation: equation,
 		Filters:      []FilterConfig{},
 	}
 	processor := NewProcessor(config)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Manually set state
 			processor.LatestPressure = tc.pressure
 			processor.LatestTemperature = tc.temperature
 
-			// Calculate
 			result, err := processor.CalculateFlow(config.FlowEquation, tc.flow, 0)
 			if err != nil {
 				t.Fatalf("Calculation error: %v", err)
@@ -94,44 +87,41 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 }
 
 func TestCalculateFlowWithFilters(t *testing.T) {
-	// Verify that filters are applied to the inputs *before* calculation if setup
+	// Verify that filters are applied to the inputs *before* calculation
 	
-	// Setup processor with filters on Pressure
-	// Low Pass Alpha 0.5
+	equation := "F + F * ((P - 100) / 255) * ((T - 125) / 255)"
 	config := ProcessingConfig{
-		FlowEquation: "F * (P / 255) * (T / 255)",
+		FlowEquation: equation,
 		Filters: []FilterConfig{
 			{Type: "low_pass", Target: "pressure", Alpha: 0.5},
 		},
 	}
 	processor := NewProcessor(config)
 
-	// Set Temperature constant Max
-	processor.LatestTemperature = 255
+	// Set Temperature to reference point (125) so it doesn't affect calculation
+	processor.LatestTemperature = 125
 
-	// 1. Update Pressure with 0 -> Stored 0
-	processor.UpdatePressure(0)
+	// 1. Update Pressure with 100 (Reference) -> Stored 100
+	processor.UpdatePressure(100)
 	
-	// 2. Update Pressure with 255. 
-	// Filter: Prev=0, New=255. Alpha=0.5. Result = 0 + 0.5*(255-0) = 127 (integer math)
-	processor.UpdatePressure(255)
+	// 2. Update Pressure with 200. 
+	// Filter: Prev=100, New=200. Alpha=0.5. Result = 100 + 0.5*(200-100) = 150
+	processor.UpdatePressure(200)
 
-	// Processor.LatestPressure should now be 127, NOT 255.
-
-	if processor.LatestPressure != 127 {
-		t.Errorf("Filter expected to dampen pressure to 127, got %d", processor.LatestPressure)
+	if processor.LatestPressure != 150 {
+		t.Errorf("Filter expected to dampen pressure to 150, got %d", processor.LatestPressure)
 	}
 
-	// Calculate Flow: F=1000, P=127, T=255
-	// Expected: 1000 * (127/255) * 1 = 498
+	// Calculate Flow: F=1000, P=150, T=125
+	// Since T=125, the second term (T-125)/255 is 0.
+	// Expected: 1000 + 1000 * ((150-100)/255) * 0 = 1000
 	
 	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0)
 	if err != nil {
 		t.Fatalf("Calculation error: %v", err)
 	}
 
-	expected := int32(498)
-	if result != expected {
-		t.Errorf("Filtered Flow Calculation: expected %d, got %d", expected, result)
+	if result != 1000 {
+		t.Errorf("Filtered Flow Calculation: expected %d, got %d", 1000, result)
 	}
 }
