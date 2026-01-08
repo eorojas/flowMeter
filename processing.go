@@ -168,7 +168,7 @@ func (p *Processor) ProcessFlow(raw int32) int32 {
 // 2. The provided equation results in a value that fits within int32 range.
 // 3. Intermediate floating-point calculations in the expression engine are used to handle
 //    scaling (e.g. / 255.0) but the final result is cast to int32 with overflow checking.
-func (p *Processor) CalculateFlow(equation string, rawFlow int32, timeSecs float64) (int32, error) {
+func (p *Processor) CalculateFlow(equation string, rawFlow int32, timeSecs float64, refPressure int32, refTemperature int32) (int32, error) {
 	// Filter the raw flow first
 	filteredFlow := p.ProcessFlow(rawFlow)
 
@@ -183,6 +183,9 @@ func (p *Processor) CalculateFlow(equation string, rawFlow int32, timeSecs float
 		"F": float64(filteredFlow),
 		"P": float64(p.LatestPressure),
 		"T": float64(p.LatestTemperature),
+		// Reference values
+		"RefP": float64(refPressure),
+		"RefT": float64(refTemperature),
 	}
 
 	resultFloat, err := EvaluateEquation(equation, params)

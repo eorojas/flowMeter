@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-json-experiment/json"
 	"os"
 )
@@ -14,7 +15,9 @@ type Config struct {
 }
 
 type SimulationConfig struct {
-	DefaultSamples int32 `json:"default_samples"`
+	DefaultSamples     int32 `json:"default_samples"`
+	DefaultPressure    int32 `json:"default_pressure"`
+	DefaultTemperature int32 `json:"default_temperature"`
 }
 
 type SensorsConfig struct {
@@ -59,5 +62,20 @@ func LoadConfig(filename string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &config, nil
+}
+
+// Validate checks configuration constraints.
+func (c *Config) Validate() error {
+	if c.Simulation.DefaultPressure < 10 || c.Simulation.DefaultPressure > 250 {
+		return fmt.Errorf("default_pressure must be between 10 and 250, got %d", c.Simulation.DefaultPressure)
+	}
+	if c.Simulation.DefaultTemperature < 10 || c.Simulation.DefaultTemperature > 250 {
+		return fmt.Errorf("default_temperature must be between 10 and 250, got %d", c.Simulation.DefaultTemperature)
+	}
+	return nil
 }

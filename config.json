@@ -1,6 +1,8 @@
 {
   "simulation": {
-    "default_samples": 10000
+    "default_samples": 10000,
+    "default_pressure": 100,
+    "default_temperature": 125
   },
   "sensors": {
     "flow": {
@@ -23,7 +25,7 @@
     }
   },
   "processing": {
-    "flow_equation": "F + F * ((P - 100) / 255) * ((T - 125) / 255)",
+    "flow_equation": "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)",
     "filters": [
       {
         "type": "low_pass",

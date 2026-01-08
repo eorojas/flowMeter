@@ -6,9 +6,12 @@ import (
 )
 
 func TestCalculateFlowAccuracy(t *testing.T) {
-	// Formula: F + F * ((P - 100) / 255) * ((T - 125) / 255)
+	// Formula: F + F * ((P - RefP) / 255) * ((T - RefT) / 255)
 	
-	equation := "F + F * ((P - 100) / 255) * ((T - 125) / 255)"
+	equation := "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)"
+	
+	refP := int32(100)
+	refT := int32(125)
 
 	tests := []struct {
 		name          string
@@ -72,7 +75,7 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 			processor.LatestPressure = tc.pressure
 			processor.LatestTemperature = tc.temperature
 
-			result, err := processor.CalculateFlow(config.FlowEquation, tc.flow, 0)
+			result, err := processor.CalculateFlow(config.FlowEquation, tc.flow, 0, refP, refT)
 			if err != nil {
 				t.Fatalf("Calculation error: %v", err)
 			}
@@ -89,7 +92,7 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 func TestCalculateFlowWithFilters(t *testing.T) {
 	// Verify that filters are applied to the inputs *before* calculation
 	
-	equation := "F + F * ((P - 100) / 255) * ((T - 125) / 255)"
+	equation := "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)"
 	config := ProcessingConfig{
 		FlowEquation: equation,
 		Filters: []FilterConfig{
@@ -97,6 +100,9 @@ func TestCalculateFlowWithFilters(t *testing.T) {
 		},
 	}
 	processor := NewProcessor(config)
+	
+	refP := int32(100)
+	refT := int32(125)
 
 	// Set Temperature to reference point (125) so it doesn't affect calculation
 	processor.LatestTemperature = 125
@@ -116,7 +122,7 @@ func TestCalculateFlowWithFilters(t *testing.T) {
 	// Since T=125, the second term (T-125)/255 is 0.
 	// Expected: 1000 + 1000 * ((150-100)/255) * 0 = 1000
 	
-	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0)
+	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0, refP, refT)
 	if err != nil {
 		t.Fatalf("Calculation error: %v", err)
 	}

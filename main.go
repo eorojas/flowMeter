@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"time"
 
@@ -11,17 +12,35 @@ import (
 )
 
 func main() {
+	// Pre-scan for config file to load defaults
+	configPath := "config.json"
+	// We do a simple manual scan because pflag parsing requires all flags to be defined
+	for i, arg := range os.Args {
+		if (arg == "-c" || arg == "--config") && i+1 < len(os.Args) {
+			configPath = os.Args[i+1]
+			break
+		}
+	}
+
+	// Load Configuration
+	config, err := LoadConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config from %s: %v", configPath, err)
+	}
+	fmt.Printf("Configuration loaded from %s.\n", configPath)
+
 	// Define command-line flags using pflag
-	var configPath string
-	flag.StringVarP(&configPath, "config", "c", "config.json", "Path to the configuration file")
+	// We redefine the config flag here so it appears in help, even though we manually parsed it above
+	var configPathFlag string
+	flag.StringVarP(&configPathFlag, "config", "c", configPath, "Path to the configuration file")
 
-	// Temp override flags
+	// Temp override flags - Default from Config
 	var tempVal int
-	flag.IntVarP(&tempVal, "temp-override-value", "T", 125, "Override temperature value (int32).")
+	flag.IntVarP(&tempVal, "temp-override-value", "T", int(config.Simulation.DefaultTemperature), "Override temperature value (int32).")
 
-	// Pressure override flags
+	// Pressure override flags - Default from Config
 	var pressureVal int
-	flag.IntVarP(&pressureVal, "pressure-override-value", "P", 100, "Override pressure value (int32).")
+	flag.IntVarP(&pressureVal, "pressure-override-value", "P", int(config.Simulation.DefaultPressure), "Override pressure value (int32).")
 
 	// Sample count flag - default to -1 to detect if it was passed
 	var sampleCountOverride int
@@ -34,13 +53,6 @@ func main() {
 	// Seed random number generator
 	rand.Seed(time.Now().UnixNano())
 
-	// Load Configuration
-	config, err := LoadConfig(configPath)
-	if err != nil {
-		log.Fatalf("Failed to load config from %s: %v", configPath, err)
-	}
-	fmt.Printf("Configuration loaded from %s.\n", configPath)
-
 	// Apply sample count override ONLY if it was passed
 	if flag.Lookup("samples").Changed {
 		config.Simulation.DefaultSamples = int32(sampleCountOverride)
@@ -49,7 +61,10 @@ func main() {
 		fmt.Printf("Using config default samples: %d\n", config.Simulation.DefaultSamples)
 	}
 
-	// Apply Temperature Override by rewriting the equation
+	// Apply Temperature Override by rewriting the equation IF CHANGED from default
+	// Note: We used the config value as the default, so checking .Changed works if the user passed a flag.
+	// But if the user passed the SAME value as default, .Changed is true but logic is same.
+	// We want to force the constant equation if the flag was provided.
 	if flag.Lookup("temp-override-value").Changed {
 		config.Sensors.Temperature.Equation = strconv.Itoa(tempVal)
 		fmt.Printf("Temperature equation overridden to constant: %s\n", config.Sensors.Temperature.Equation)
@@ -63,7 +78,7 @@ func main() {
 
 	// Initialize Processor
 	processor := NewProcessor(config.Processing)
-	// Initialize with default or overridden values so they don't start at zero
+	// Initialize with defaults (which now come from flags/config)
 	processor.LatestTemperature = int32(tempVal)
 	processor.LatestPressure = int32(pressureVal)
 	fmt.Printf("Initial state: Temperature=%d, Pressure=%d\n", processor.LatestTemperature, processor.LatestPressure)
@@ -76,7 +91,6 @@ func main() {
 	defer outputHandler.Close()
 
 	// Start independent sensor simulations using config
-	// All sensors are started, even if overridden, so that noise/filtering logic runs.
 	flowCh := StartSensor(FlowSensor, config.Sensors.Flow)
 	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure)
 	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature)
@@ -92,6 +106,10 @@ func main() {
 	var sampleCount int64
 	maxSamples := int64(config.Simulation.DefaultSamples)
 
+	// Capture reference values for the equation
+	refPressure := config.Simulation.DefaultPressure
+	refTemperature := config.Simulation.DefaultTemperature
+
 	for {
 		select {
 		case data := <-pressureCh:
@@ -105,8 +123,8 @@ func main() {
 			// Calculate elapsed time for the equation
 			elapsed := data.Timestamp.Sub(startTime).Seconds()
 
-			// Calculate Final Flow
-			calculated, err := processor.CalculateFlow(config.Processing.FlowEquation, data.Value, elapsed)
+			// Calculate Final Flow using updated signature
+			calculated, err := processor.CalculateFlow(config.Processing.FlowEquation, data.Value, elapsed, refPressure, refTemperature)
 			if err != nil {
 				log.Printf("Error calculating flow: %v", err)
 				continue
