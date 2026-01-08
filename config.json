@@ -23,7 +23,7 @@
     }
   },
   "processing": {
-    "flow_equation": "flow * (pressure / 255) * (temperature / 255)",
+    "flow_equation": "F * (P / 255) * (T / 255)",
     "filters": [
       {
         "type": "low_pass",
