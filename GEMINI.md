@@ -74,3 +74,9 @@ A simulation of a multi-sensor flow meter.
 - Run project: `go run .`
 - Test project: `go test ./...`
 - Build: `go build -o flowMeter`
+
+## Misc Requirements
+- Argument parsing
+    - select config file.
+    - override temperature
+    - override pressure
