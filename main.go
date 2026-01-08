@@ -11,12 +11,28 @@ import (
 func main() {
 	// Define command-line flags
 	configPath := flag.String("config", "config.json", "Path to the configuration file")
-	overrideTemp := flag.Int("temp", -1, "Override temperature with a constant value (int32)")
-	overridePressure := flag.Int("pressure", -1, "Override pressure with a constant value (int32)")
+
+	// Temp override flags
+	tempVal := flag.Int("temp-override-value", 25, "Override temperature value (int32). Default is mid-range.")
+	tempSrc := flag.String("temp-override-source", "cli", "Source of the temperature override.")
+
+	// Pressure override flags
+	pressureVal := flag.Int("pressure-override-value", 100, "Override pressure value (int32). Default is mid-range.")
+	pressureSrc := flag.String("pressure-override-source", "cli", "Source of the pressure override.")
+
 	flag.Parse()
 
+	// Determine active overrides based on passed flags
+	setFlags := make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) {
+		setFlags[f.Name] = true
+	})
+
+	overrideTempActive := setFlags["temp-override-value"] || setFlags["temp-override-source"]
+	overridePressureActive := setFlags["pressure-override-value"] || setFlags["pressure-override-source"]
+
 	fmt.Println("Project initialized. Starting FlowMeter Simulation...")
-	
+
 	// Seed random number generator
 	rand.Seed(time.Now().UnixNano())
 
@@ -31,13 +47,22 @@ func main() {
 	processor := NewProcessor(config.Processing)
 
 	// Apply overrides if provided
-	if *overrideTemp != -1 {
-		processor.LatestTemperature = int32(*overrideTemp)
-		fmt.Printf("Temperature override: %d\n", processor.LatestTemperature)
+	if overrideTempActive {
+		to := TempOverride{
+			Value:  int32(*tempVal),
+			Source: *tempSrc,
+		}
+		processor.ApplyTempOverride(to)
+		fmt.Printf("Temperature override applied: Value=%d, Source=%s\n", to.Value, to.Source)
 	}
-	if *overridePressure != -1 {
-		processor.LatestPressure = int32(*overridePressure)
-		fmt.Printf("Pressure override: %d\n", processor.LatestPressure)
+
+	if overridePressureActive {
+		po := PressureOverride{
+			Value:  int32(*pressureVal),
+			Source: *pressureSrc,
+		}
+		processor.ApplyPressureOverride(po)
+		fmt.Printf("Pressure override applied: Value=%d, Source=%s\n", po.Value, po.Source)
 	}
 
 	// Initialize Output Handler
@@ -49,15 +74,15 @@ func main() {
 
 	// Start independent sensor simulations using config
 	flowCh := StartSensor(FlowSensor, config.Sensors.Flow)
-	
+
 	// Only start sensors if they are not overridden
 	var pressureCh <-chan SensorData
-	if *overridePressure == -1 {
+	if !overridePressureActive {
 		pressureCh = StartSensor(PressureSensor, config.Sensors.Pressure)
 	}
 
 	var tempCh <-chan SensorData
-	if *overrideTemp == -1 {
+	if !overrideTempActive {
 		tempCh = StartSensor(TemperatureSensor, config.Sensors.Temperature)
 	}
 
@@ -97,13 +122,8 @@ func main() {
 				RawFlow:        data.Value,
 				Pressure:       processor.LatestPressure,
 				Temperature:    processor.LatestTemperature,
-				CalculatedFlow: int32(calculated), // calculated is int64, but OutputData struct expects int32.
+				CalculatedFlow: calculated,
 			}
-            
-            // Wait, OutputData.CalculatedFlow is int32. The logic in processing.go returns int32 now? 
-            // I checked processing.go, I changed it to return int32 in the last step.
-            // So casting int32(calculated) is redundant if it returns int32, but safe if I misremembered.
-            // Actually, wait, let me check processing.go again to be sure.
 
 			if err := outputHandler.Write(outData); err != nil {
 				log.Printf("Error writing output: %v", err)
@@ -115,4 +135,3 @@ func main() {
 		}
 	}
 }
-
