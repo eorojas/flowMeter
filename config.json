@@ -14,13 +14,13 @@
     "pressure": {
       "frequency_hz": 10,
       "resolution_bits": 8,
-      "equation": "100 + 20 * cos(t/2)",
+      "equation": "RefP + 20 * cos(t/2)",
       "noise_amplitude": 5.0
     },
     "temperature": {
       "frequency_hz": 10,
       "resolution_bits": 8,
-      "equation": "25 + 5 * sin(t/5)",
+      "equation": "RefT + 5 * sin(t/5)",
       "noise_amplitude": 1.0
     }
   },
@@ -30,6 +30,11 @@
       {
         "type": "low_pass",
         "target": "pressure",
+        "alpha": 0.1
+      },
+      {
+        "type": "low_pass",
+        "target": "temperature",
         "alpha": 0.1
       }
     ]

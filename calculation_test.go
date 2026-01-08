@@ -131,3 +131,46 @@ func TestCalculateFlowWithFilters(t *testing.T) {
 		t.Errorf("Filtered Flow Calculation: expected %d, got %d", 1000, result)
 	}
 }
+
+func TestCalculateFlowWithTempFilter(t *testing.T) {
+	// Verify that filters are applied to Temperature input
+	
+	equation := "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)"
+	config := ProcessingConfig{
+		FlowEquation: equation,
+		Filters: []FilterConfig{
+			{Type: "low_pass", Target: "temperature", Alpha: 0.5},
+		},
+	}
+	processor := NewProcessor(config)
+	
+	refP := int32(100)
+	refT := int32(125)
+
+	// Set Pressure to reference point (100)
+	processor.LatestPressure = 100
+
+	// 1. Update Temperature with 125 (Reference) -> Stored 125
+	processor.UpdateTemperature(125)
+	
+	// 2. Update Temperature with 225. 
+	// Filter: Prev=125, New=225. Alpha=0.5. Result = 125 + 0.5*(225-125) = 175
+	processor.UpdateTemperature(225)
+
+	if processor.LatestTemperature != 175 {
+		t.Errorf("Filter expected to dampen temperature to 175, got %d", processor.LatestTemperature)
+	}
+
+	// Calculate Flow: F=1000, P=100, T=175
+	// Since P=100, the first term (P-100)/255 is 0.
+	// Expected: 1000 + 1000 * 0 * (...) = 1000
+	
+	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0, refP, refT)
+	if err != nil {
+		t.Fatalf("Calculation error: %v", err)
+	}
+
+	if result != 1000 {
+		t.Errorf("Filtered Flow Calculation: expected %d, got %d", 1000, result)
+	}
+}
