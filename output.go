@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
+	"github.com/go-json-experiment/json"
+	"net/http"
 	"os"
 	"strconv"
 )
@@ -87,6 +90,43 @@ func (c *ConsoleOutput) Close() error {
 	return nil
 }
 
+// NetworkOutput implements OutputHandler for HTTP POST requests.
+type NetworkOutput struct {
+	TargetURL string
+	Client    *http.Client
+}
+
+func NewNetworkOutput(url string) *NetworkOutput {
+	return &NetworkOutput{
+		TargetURL: url,
+		Client:    &http.Client{},
+	}
+}
+
+func (n *NetworkOutput) Write(data OutputData) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	resp, err := n.Client.Post(n.TargetURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("server returned error status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (n *NetworkOutput) Close() error {
+	// HTTP client doesn't need explicit closing
+	return nil
+}
+
 // GetOutputHandler is a factory function to create the configured handler.
 func GetOutputHandler(config OutputConfig) (OutputHandler, error) {
 	switch config.Type {
@@ -94,6 +134,8 @@ func GetOutputHandler(config OutputConfig) (OutputHandler, error) {
 		return NewFileOutput(config.Target)
 	case "console":
 		return NewConsoleOutput(), nil
+	case "network":
+		return NewNetworkOutput(config.Target), nil
 	default:
 		return NewConsoleOutput(), nil
 	}

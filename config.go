@@ -27,10 +27,11 @@ type SensorsConfig struct {
 }
 
 type SensorConfig struct {
-	FrequencyHz    int32   `json:"frequency_hz"`
-	ResolutionBits int32   `json:"resolution_bits"`
-	Equation       string  `json:"equation"`
-	NoiseAmplitude float64 `json:"noise_amplitude"`
+	FrequencyHz       int32   `json:"frequency_hz"`
+	ResolutionBits    int32   `json:"resolution_bits"`
+	Equation          string  `json:"equation"`
+	NoiseAmplitude    float64 `json:"noise_amplitude"`
+	NoiseDistribution string  `json:"noise_distribution,omitempty"` // "uniform" (default) or "normal"
 }
 
 type ProcessingConfig struct {
@@ -40,9 +41,10 @@ type ProcessingConfig struct {
 }
 
 type FilterConfig struct {
-	Type   string  `json:"type"`   // e.g., "low_pass", "median"
-	Target string  `json:"target"` // e.g., "pressure"
-	Alpha  float64 `json:"alpha,omitempty"`
+	Type       string  `json:"type"`                  // e.g., "low_pass", "median"
+	Target     string  `json:"target"`                // e.g., "pressure"
+	Alpha      float64 `json:"alpha,omitempty"`       // For Low Pass
+	WindowSize int     `json:"window_size,omitempty"` // For Median
 }
 
 type OutputConfig struct {

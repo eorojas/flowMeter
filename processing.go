@@ -116,7 +116,11 @@ func NewProcessor(config ProcessingConfig) *Processor {
 		case "low_pass":
 			f = NewLowPassFilter(fc.Alpha)
 		case "median":
-			f = NewMedianFilter(5)
+			winSize := fc.WindowSize
+			if winSize <= 0 {
+				winSize = 5 // Default if not specified
+			}
+			f = NewMedianFilter(winSize)
 		default:
 			continue
 		}

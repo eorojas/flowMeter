@@ -39,8 +39,15 @@ func readSensorValue(config SensorConfig, startTime time.Time, params map[string
 	}
 
 	// Add random noise
-	// noise is random value between [-noiseAmplitude, +noiseAmplitude]
-	noise := (rand.Float64()*2 - 1) * config.NoiseAmplitude
+	var noise float64
+	if config.NoiseDistribution == "normal" {
+		// Normal distribution (Gaussian): Mean 0, StdDev 1 * Amplitude
+		// This treats Amplitude as the standard deviation
+		noise = rand.NormFloat64() * config.NoiseAmplitude
+	} else {
+		// Default: Uniform distribution [-Amplitude, +Amplitude]
+		noise = (rand.Float64()*2 - 1) * config.NoiseAmplitude
+	}
 	finalValue := baseValue + noise
 
 	// Clamp and scale based on resolution bits

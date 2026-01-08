@@ -9,7 +9,8 @@
       "frequency_hz": 100,
       "resolution_bits": 24,
       "equation": "5000 + 100 * sin(t)",
-      "noise_amplitude": 2.0
+      "noise_amplitude": 10.0,
+      "noise_distribution": "normal"
     },
     "pressure": {
       "frequency_hz": 10,
@@ -34,9 +35,14 @@
         "alpha": 0.1
       },
       {
-        "type": "low_pass",
+        "type": "median",
         "target": "temperature",
-        "alpha": 0.1
+        "window_size": 7
+      },
+      {
+        "type": "low_pass",
+        "target": "flow",
+        "alpha": 0.2
       }
     ]
   },
