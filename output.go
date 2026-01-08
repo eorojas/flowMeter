@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 )
 
 // OutputData represents the final calculated packet to be sent to receivers.
 type OutputData struct {
-	Timestamp      time.Time `json:"timestamp"`
-	RawFlow        int32     `json:"raw_flow"`
-	Pressure       int32     `json:"pressure"`
-	Temperature    int32     `json:"temperature"`
-	CalculatedFlow int32     `json:"calculated_flow"`
+	SampleNumber   int64 `json:"sample_number"`
+	RawFlow        int32 `json:"raw_flow"`
+	Pressure       int32 `json:"pressure"`
+	Temperature    int32 `json:"temperature"`
+	CalculatedFlow int32 `json:"calculated_flow"`
 }
 
 // OutputHandler defines the interface for different output destinations.
@@ -37,7 +36,7 @@ func NewFileOutput(filename string) (*FileOutput, error) {
 
 	writer := csv.NewWriter(file)
 	// Write CSV Header
-	header := []string{"timestamp", "raw_flow", "pressure", "temperature", "calculated_flow"}
+	header := []string{"sample_number", "raw_flow", "pressure", "temperature", "calculated_flow"}
 	if err := writer.Write(header); err != nil {
 		file.Close()
 		return nil, err
@@ -49,7 +48,7 @@ func NewFileOutput(filename string) (*FileOutput, error) {
 
 func (f *FileOutput) Write(data OutputData) error {
 	record := []string{
-		data.Timestamp.Format(time.RFC3339Nano),
+		strconv.FormatInt(data.SampleNumber, 10),
 		strconv.FormatInt(int64(data.RawFlow), 10),
 		strconv.FormatInt(int64(data.Pressure), 10),
 		strconv.FormatInt(int64(data.Temperature), 10),
@@ -75,8 +74,8 @@ func NewConsoleOutput() *ConsoleOutput {
 }
 
 func (c *ConsoleOutput) Write(data OutputData) error {
-	fmt.Printf("[%s] Flow: %8d | P: %3d | T: %3d | Calc: %d\n",
-		data.Timestamp.Format("15:04:05.000"),
+	fmt.Printf("[%8d] Flow: %8d | P: %3d | T: %3d | Calc: %d\n",
+		data.SampleNumber,
 		data.RawFlow,
 		data.Pressure,
 		data.Temperature,

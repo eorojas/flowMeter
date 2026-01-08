@@ -93,6 +93,7 @@ func main() {
 	startTime := time.Now()
 
 	fmt.Println("Listening for sensor data...")
+	var sampleCount int64
 	for {
 		select {
 		case data, ok := <-pressureCh:
@@ -106,6 +107,7 @@ func main() {
 			}
 
 		case data := <-flowCh:
+			sampleCount++
 			// Calculate elapsed time for the equation
 			elapsed := data.Timestamp.Sub(startTime).Seconds()
 
@@ -118,7 +120,7 @@ func main() {
 
 			// Prepare Output
 			outData := OutputData{
-				Timestamp:      data.Timestamp,
+				SampleNumber:   sampleCount,
 				RawFlow:        data.Value,
 				Pressure:       processor.LatestPressure,
 				Temperature:    processor.LatestTemperature,
