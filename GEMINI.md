@@ -81,3 +81,12 @@ A simulation of a multi-sensor flow meter.
     - [x] select config file.
     - [x] override temperature
     - [x] override pressure
+
+## Exploration & Research
+- **Floating Point Precision**: Evaluate the implications of using `float32` vs `float64`. 
+    - *Current status*: Using `float64` for maximum compatibility with `math` and `govaluate`.
+    - *Research*: Impact on precision for high-value flow references (~8M) and accumulation error.
+- **Integer-Space Filtering**: Investigate implementing filters in integer/fixed-point space.
+    - *FIR Filters*: Research efficient integer implementations to avoid floating point overhead.
+    - *Median Filters*: Current implementation uses `int32`, verify efficiency for large windows.
+    - *Scaling*: Using fixed-point arithmetic (e.g., Q16.16) for fractional logic in integer space.
