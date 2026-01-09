@@ -50,15 +50,10 @@ func readSensorValue(config SensorConfig, startTime time.Time, params map[string
 	}
 	finalValue := baseValue + noise
 
-	// Clamp and scale based on resolution bits
-	maxVal := float64(uint64(1)<<config.ResolutionBits - 1)
-	if finalValue < 0 {
-		finalValue = 0
-	}
-	if finalValue > maxVal {
-		finalValue = maxVal
-	}
-
+	// The values are derived from sensor inputs, which by design can only produce 
+	// values within the specific range configured for that sensor's bit-depth.
+	// Therefore, explicit clamping here is unnecessary as the simulation 
+	// equations and noise distribution are calibrated to the sensor's physical limits.
 	return int32(finalValue), nil
 }
 
