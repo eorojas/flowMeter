@@ -26,8 +26,9 @@ A simulation of a multi-sensor flow meter.
     - There will be the ability to add noise on top of the sensor values.
     - A each flow value we will calculate the current filtered temperature and 
         pressure values, which will be allied to the flow equation.
-    - The calculated flow rate (CFRate) (and any ancillary data) will be packaged 
-        and push to a configured end-point, e.g., a file or network end-point.
+    - The calculated flow rate (CFRate) (and any ancillary data) will
+        be packaged and push to a configured end-point, e.g.,
+        a file or network end-point.
     - For testing the number of samples should be command-line configurable
         and default to 10000.
 - **Receiver Method:** 
@@ -90,3 +91,4 @@ A simulation of a multi-sensor flow meter.
     - *FIR Filters*: Research efficient integer implementations to avoid floating point overhead.
     - *Median Filters*: Current implementation uses `int32`, verify efficiency for large windows.
     - *Scaling*: Using fixed-point arithmetic (e.g., Q16.16) for fractional logic in integer space.
+
