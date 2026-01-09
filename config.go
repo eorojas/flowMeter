@@ -18,6 +18,7 @@ type SimulationConfig struct {
 	DefaultSamples     int32 `json:"default_samples"`
 	DefaultPressure    int32 `json:"default_pressure"`
 	DefaultTemperature int32 `json:"default_temperature"`
+	DefaultFlow        int32 `json:"default_flow"`
 }
 
 type SensorsConfig struct {
@@ -79,6 +80,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Simulation.DefaultTemperature < 10 || c.Simulation.DefaultTemperature > 250 {
 		return fmt.Errorf("default_temperature must be between 10 and 250, got %d", c.Simulation.DefaultTemperature)
+	}
+	if c.Simulation.DefaultFlow < 0 || c.Simulation.DefaultFlow > 16777215 {
+		return fmt.Errorf("default_flow must be within 24-bit unsigned range, got %d", c.Simulation.DefaultFlow)
 	}
 	if c.Processing.DefaultFilterType != "" {
 		if c.Processing.DefaultFilterType != "low_pass" && c.Processing.DefaultFilterType != "median" {

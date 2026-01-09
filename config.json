@@ -2,13 +2,14 @@
   "simulation": {
     "default_samples": 10000,
     "default_pressure": 100,
-    "default_temperature": 125
+    "default_temperature": 125,
+    "default_flow": 8388608
   },
   "sensors": {
     "flow": {
       "frequency_hz": 100,
       "resolution_bits": 24,
-      "equation": "5000 + 100 * sin(t)",
+      "equation": "RefF + 100 * sin(t)",
       "noise_amplitude": 10.0,
       "noise_distribution": "normal"
     },
@@ -32,17 +33,19 @@
       {
         "type": "low_pass",
         "target": "pressure",
-        "alpha": 0.1
-      },
-      {
-        "type": "median",
-        "target": "temperature",
+        "alpha": 0.1,
         "window_size": 7
       },
       {
         "type": "low_pass",
+        "target": "temperature",
+        "window_size": 7
+      },
+      {
+        "type": "median",
         "target": "flow",
-        "alpha": 0.2
+        "alpha": 0.2,
+        "window_size": 11
       }
     ]
   },

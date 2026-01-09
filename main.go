@@ -30,9 +30,12 @@ func main() {
 	fmt.Printf("Configuration loaded from %s.\n", configPath)
 
 	// Define command-line flags using pflag
-	// We redefine the config flag here so it appears in help, even though we manually parsed it above
 	var configPathFlag string
 	flag.StringVarP(&configPathFlag, "config", "c", configPath, "Path to the configuration file")
+
+	// Flow override flags - Default from Config
+	var flowVal int
+	flag.IntVarP(&flowVal, "flow-override-value", "F", int(config.Simulation.DefaultFlow), "Override flow reference value (int32).")
 
 	// Temp override flags - Default from Config
 	var tempVal int
@@ -67,7 +70,6 @@ func main() {
 		baseSeed = 0
 		fmt.Println("Using deterministic base seed 0.")
 	}
-	// Note: We still seed the global rand just in case, but sensors use local Rand
 	rand.Seed(baseSeed)
 
 	// Apply sample count override ONLY if it was passed
@@ -78,7 +80,13 @@ func main() {
 		fmt.Printf("Using config default samples: %d\n", config.Simulation.DefaultSamples)
 	}
 
-	// Apply Temperature Override by rewriting the equation IF CHANGED from default
+	// Apply Flow Override by rewriting the equation IF CHANGED from default
+	if flag.Lookup("flow-override-value").Changed {
+		config.Sensors.Flow.Equation = strconv.Itoa(flowVal)
+		fmt.Printf("Flow equation overridden to constant: %s\n", config.Sensors.Flow.Equation)
+	}
+
+	// Apply Temperature Override by rewriting the equation
 	if flag.Lookup("temp-override-value").Changed {
 		config.Sensors.Temperature.Equation = strconv.Itoa(tempVal)
 		fmt.Printf("Temperature equation overridden to constant: %s\n", config.Sensors.Temperature.Equation)
@@ -112,7 +120,7 @@ func main() {
 	// Initialize with defaults (which now come from flags/config)
 	processor.LatestTemperature = int32(tempVal)
 	processor.LatestPressure = int32(pressureVal)
-	fmt.Printf("Initial state: Temperature=%d, Pressure=%d\n", processor.LatestTemperature, processor.LatestPressure)
+	fmt.Printf("Initial state: Temperature=%d, Pressure=%d, FlowRef=%d\n", processor.LatestTemperature, processor.LatestPressure, flowVal)
 
 	// Initialize Output Handler
 	outputHandler, err := GetOutputHandler(config.Output)
@@ -123,18 +131,16 @@ func main() {
 
 	// Start independent sensor simulations using config
 	refParams := map[string]interface{}{
+		"RefF": float64(config.Simulation.DefaultFlow),
 		"RefP": float64(config.Simulation.DefaultPressure),
 		"RefT": float64(config.Simulation.DefaultTemperature),
 	}
-	// Use unique seeds derived from baseSeed for each sensor
 	flowCh := StartSensor(FlowSensor, config.Sensors.Flow, refParams, baseSeed)
 	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure, refParams, baseSeed+1)
 	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature, refParams, baseSeed+2)
 
 	// Consume data
-	// Calculate run duration based on samples and flow frequency
 	runSecs := time.Duration(config.Simulation.DefaultSamples / config.Sensors.Flow.FrequencyHz)
-	// Add a small buffer to ensure we get the last sample if timing is tight
 	timeout := time.After(runSecs*time.Second + 500*time.Millisecond)
 	startTime := time.Now()
 
@@ -143,6 +149,7 @@ func main() {
 	maxSamples := int64(config.Simulation.DefaultSamples)
 
 	// Capture reference values for the equation
+	refFlow := config.Simulation.DefaultFlow
 	refPressure := config.Simulation.DefaultPressure
 	refTemperature := config.Simulation.DefaultTemperature
 
@@ -156,18 +163,17 @@ func main() {
 
 		case data := <-flowCh:
 			sampleCount++
-			// Calculate elapsed time for the equation
 			elapsed := data.Timestamp.Sub(startTime).Seconds()
 
 			// Calculate Final Flow using updated signature
-			calculated, err := processor.CalculateFlow(config.Processing.FlowEquation, data.Value, elapsed, refPressure, refTemperature)
+			calculated, err := processor.CalculateFlow(config.Processing.FlowEquation, data.Value, elapsed, refFlow, refPressure, refTemperature)
 			if err != nil {
 				log.Printf("Error calculating flow: %v", err)
 				continue
 			}
 
 			// Prepare Output
-			outData := OutputData{
+		outData := OutputData{
 				SampleNumber:   sampleCount,
 				RawFlow:        data.Value,
 				Pressure:       processor.LatestPressure,
