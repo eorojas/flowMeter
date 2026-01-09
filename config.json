@@ -2,8 +2,8 @@
   "simulation": {
     "default_samples": 10000,
     "default_pressure": 100,
-    "default_temperature": 125,
-    "default_flow": 8388608
+    "default_temperature": 100,
+    "default_flow": 8000000
   },
   "sensors": {
     "flow": {

@@ -10,9 +10,9 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 	
 	equation := "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)"
 	
-	refF := int32(8388608)
+	refF := int32(8000000)
 	refP := int32(100)
-	refT := int32(125)
+	refT := int32(100)
 
 	tests := []struct {
 		name          string
@@ -26,7 +26,7 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 			name:        "Reference Point (No Deviation)",
 			flow:        1000,
 			pressure:    100,
-			temperature: 125,
+			temperature: 100,
 			expected:    1000, // 1000 + 1000 * 0 * 0
 			tolerance:   0,
 		},
@@ -35,10 +35,10 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 			flow:        1000,
 			pressure:    255,
 			temperature: 255,
-			// 1000 + 1000 * (155/255) * (130/255)
-			// 1000 + 1000 * 0.6078 * 0.5098
-			// 1000 + 1000 * 0.3098 ~= 1309.8
-			expected:    1310,
+			// 1000 + 1000 * (155/255) * (155/255)
+			// 1000 + 1000 * 0.6078 * 0.6078
+			// 1000 + 1000 * 0.3694 ~= 1369.4
+			expected:    1369,
 			tolerance:   1,
 		},
 		{
@@ -46,10 +46,10 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 			flow:        1000,
 			pressure:    0,
 			temperature: 0,
-			// 1000 + 1000 * (-100/255) * (-125/255)
-			// 1000 + 1000 * (-0.3921) * (-0.4901)
-			// 1000 + 1000 * 0.1922 ~= 1192.2
-			expected:    1192,
+			// 1000 + 1000 * (-100/255) * (-100/255)
+			// 1000 + 1000 * (-0.3921) * (-0.3921)
+			// 1000 + 1000 * 0.1537 ~= 1153.7
+			expected:    1154,
 			tolerance:   1,
 		},
 		{
@@ -57,10 +57,10 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 			flow:        1000,
 			pressure:    50,
 			temperature: 255,
-			// 1000 + 1000 * (-50/255) * (130/255)
-			// 1000 + 1000 * -0.196 * 0.5098
-			// 1000 + 1000 * -0.1 ~= 900
-			expected:    900,
+			// 1000 + 1000 * (-50/255) * (155/255)
+			// 1000 + 1000 * -0.196 * 0.6078
+			// 1000 + 1000 * -0.119 ~= 881
+			expected:    881,
 			tolerance:   1,
 		},
 	}
@@ -102,12 +102,12 @@ func TestCalculateFlowWithFilters(t *testing.T) {
 	}
 	processor := NewProcessor(config)
 	
-	refF := int32(8388608)
+	refF := int32(8000000)
 	refP := int32(100)
-	refT := int32(125)
+	refT := int32(100)
 
-	// Set Temperature to reference point (125) so it doesn't affect calculation
-	processor.LatestTemperature = 125
+	// Set Temperature to reference point (100) so it doesn't affect calculation
+	processor.LatestTemperature = 100
 
 	// 1. Update Pressure with 100 (Reference) -> Stored 100
 	processor.UpdatePressure(100)
@@ -120,8 +120,8 @@ func TestCalculateFlowWithFilters(t *testing.T) {
 		t.Errorf("Filter expected to dampen pressure to 150, got %d", processor.LatestPressure)
 	}
 
-	// Calculate Flow: F=1000, P=150, T=125
-	// Since T=125, the second term (T-125)/255 is 0.
+	// Calculate Flow: F=1000, P=150, T=100
+	// Since T=100, the second term (T-100)/255 is 0.
 	// Expected: 1000 + 1000 * ((150-100)/255) * 0 = 1000
 	
 	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0, refF, refP, refT)
@@ -146,25 +146,25 @@ func TestCalculateFlowWithTempFilter(t *testing.T) {
 	}
 	processor := NewProcessor(config)
 	
-	refF := int32(8388608)
+	refF := int32(8000000)
 	refP := int32(100)
-	refT := int32(125)
+	refT := int32(100)
 
 	// Set Pressure to reference point (100)
 	processor.LatestPressure = 100
 
-	// 1. Update Temperature with 125 (Reference) -> Stored 125
-	processor.UpdateTemperature(125)
+	// 1. Update Temperature with 100 (Reference) -> Stored 100
+	processor.UpdateTemperature(100)
 	
-	// 2. Update Temperature with 225. 
-	// Filter: Prev=125, New=225. Alpha=0.5. Result = 125 + 0.5*(225-125) = 175
-	processor.UpdateTemperature(225)
+	// 2. Update Temperature with 200. 
+	// Filter: Prev=100, New=200. Alpha=0.5. Result = 100 + 0.5*(200-100) = 150
+	processor.UpdateTemperature(200)
 
-	if processor.LatestTemperature != 175 {
-		t.Errorf("Filter expected to dampen temperature to 175, got %d", processor.LatestTemperature)
+	if processor.LatestTemperature != 150 {
+		t.Errorf("Filter expected to dampen temperature to 150, got %d", processor.LatestTemperature)
 	}
 
-	// Calculate Flow: F=1000, P=100, T=175
+	// Calculate Flow: F=1000, P=100, T=150
 	// Since P=100, the first term (P-100)/255 is 0.
 	// Expected: 1000 + 1000 * 0 * (...) = 1000
 	
