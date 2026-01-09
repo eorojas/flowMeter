@@ -12,6 +12,15 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# Binaries
+/flowMeter
+/http_receiver
+
+# Test and Log files
+receiver.log
+net_config.json
+run_network_test.sh
+
 # program output file
 *.csv
 
