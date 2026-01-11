@@ -39,7 +39,11 @@ func NewFileOutput(filename string) (*FileOutput, error) {
 
 	writer := csv.NewWriter(file)
 	// Write CSV Header
-	header := []string{"sample_number", "raw_flow", "pressure", "temperature", "calculated_flow"}
+	header := []string{"sample_number",
+                       "raw_flow",
+                       "pressure",
+                       "temperature",
+                       "calculated_flow"}
 	if err := writer.Write(header); err != nil {
 		file.Close()
 		return nil, err
@@ -109,7 +113,9 @@ func (n *NetworkOutput) Write(data OutputData) error {
 		return err
 	}
 
-	resp, err := n.Client.Post(n.TargetURL, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := n.Client.Post(n.TargetURL,
+                               "application/json",
+                               bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}

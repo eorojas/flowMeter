@@ -76,15 +76,27 @@ func TestCalculateFlowAccuracy(t *testing.T) {
 			processor.LatestPressure = tc.pressure
 			processor.LatestTemperature = tc.temperature
 
-			result, err := processor.CalculateFlow(config.FlowEquation, tc.flow, 0, refF, refP, refT)
+			result, err := processor.CalculateFlow(config.FlowEquation,
+                                                   tc.flow,
+                                                   0,
+                                                   refF,
+                                                   refP,
+                                                   refT)
 			if err != nil {
 				t.Fatalf("Calculation error: %v", err)
 			}
 
 			diff := int32(math.Abs(float64(result - tc.expected)))
 			if diff > tc.tolerance {
-				t.Errorf("Inputs(F=%d, P=%d, T=%d): expected ~%d, got %d (diff %d > %d)",
-					tc.flow, tc.pressure, tc.temperature, tc.expected, result, diff, tc.tolerance)
+				t.Errorf("Inputs(F=%d, P=%d, T=%d): " +
+					"expected ~%d, got %d (diff %d > %d)",
+					tc.flow,
+                         tc.pressure,
+                         tc.temperature,
+                         tc.expected,
+                         result,
+                         diff,
+                         tc.tolerance)
 			}
 		})
 	}
@@ -106,25 +118,33 @@ func TestCalculateFlowWithFilters(t *testing.T) {
 	refP := int32(100)
 	refT := int32(100)
 
-	// Set Temperature to reference point (100) so it doesn't affect calculation
+	// Set Temperature to reference point (100)
+    // so it doesn't affect calculation
 	processor.LatestTemperature = 100
 
 	// 1. Update Pressure with 100 (Reference) -> Stored 100
 	processor.UpdatePressure(100)
 	
 	// 2. Update Pressure with 200. 
-	// Filter: Prev=100, New=200. Alpha=0.5. Result = 100 + 0.5*(200-100) = 150
+	// Filter: Prev=100, New=200. Alpha=0.5.
+    //         Result = 100 + 0.5*(200-100) = 150
 	processor.UpdatePressure(200)
 
 	if processor.LatestPressure != 150 {
-		t.Errorf("Filter expected to dampen pressure to 150, got %d", processor.LatestPressure)
+		t.Errorf("Filter expected to dampen pressure to 150, got %d",
+                 processor.LatestPressure)
 	}
 
 	// Calculate Flow: F=1000, P=150, T=100
 	// Since T=100, the second term (T-100)/255 is 0.
 	// Expected: 1000 + 1000 * ((150-100)/255) * 0 = 1000
 	
-	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0, refF, refP, refT)
+	result, err := processor.CalculateFlow(config.FlowEquation,
+                                           1000,
+                                           0,
+                                           refF,
+                                           refP,
+                                           refT)
 	if err != nil {
 		t.Fatalf("Calculation error: %v", err)
 	}
@@ -161,19 +181,27 @@ func TestCalculateFlowWithTempFilter(t *testing.T) {
 	processor.UpdateTemperature(200)
 
 	if processor.LatestTemperature != 150 {
-		t.Errorf("Filter expected to dampen temperature to 150, got %d", processor.LatestTemperature)
+		t.Errorf("Filter expected to dampen temperature to 150, got %d",
+                 processor.LatestTemperature)
 	}
 
 	// Calculate Flow: F=1000, P=100, T=150
 	// Since P=100, the first term (P-100)/255 is 0.
 	// Expected: 1000 + 1000 * 0 * (...) = 1000
 	
-	result, err := processor.CalculateFlow(config.FlowEquation, 1000, 0, refF, refP, refT)
+	result, err := processor.CalculateFlow(config.FlowEquation,
+                                           1000,
+                                           0,
+                                           refF,
+                                           refP,
+                                           refT)
 	if err != nil {
 		t.Fatalf("Calculation error: %v", err)
 	}
 
 	if result != 1000 {
-		t.Errorf("Filtered Flow Calculation: expected %d, got %d", 1000, result)
+		t.Errorf("Filtered Flow Calculation: expected %d, got %d",
+                 1000,
+                 result)
 	}
 }

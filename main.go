@@ -14,7 +14,8 @@ import (
 func main() {
 	// Pre-scan for config file to load defaults
 	configPath := "config.json"
-	// We do a simple manual scan because pflag parsing requires all flags to be defined
+	// We do a simple manual scan because pflag parsing
+    // requires all flags to be defined
 	for i, arg := range os.Args {
 		if (arg == "-c" || arg == "--config") && i+1 < len(os.Args) {
 			configPath = os.Args[i+1]
@@ -31,31 +32,58 @@ func main() {
 
 	// Define command-line flags using pflag
 	var configPathFlag string
-	flag.StringVarP(&configPathFlag, "config", "c", configPath, "Path to the configuration file")
+	flag.StringVarP(&configPathFlag,
+                    "config", "c",
+                    configPath,
+                    "Path to the configuration file")
 
 	// Flow override flags - Default from Config
 	var flowVal int
-	flag.IntVarP(&flowVal, "flow-override-value", "F", int(config.Simulation.DefaultFlow), "Override flow reference value (int32).")
+	flag.IntVarP(&flowVal,
+                 "flow-override-value",
+                 "F",
+                 int(config.Simulation.DefaultFlow),
+                 "Override flow reference value (int32).")
 
 	// Temp override flags - Default from Config
 	var tempVal int
-	flag.IntVarP(&tempVal, "temp-override-value", "T", int(config.Simulation.DefaultTemperature), "Override temperature value (int32).")
+	flag.IntVarP(&tempVal,
+                 "temp-override-value",
+                 "T",
+                 int(config.Simulation.DefaultTemperature),
+                 "Override temperature value (int32).")
 
 	// Pressure override flags - Default from Config
 	var pressureVal int
-	flag.IntVarP(&pressureVal, "pressure-override-value", "P", int(config.Simulation.DefaultPressure), "Override pressure value (int32).")
+	flag.IntVarP(&pressureVal,
+                 "pressure-override-value",
+                 "P",
+                 int(config.Simulation.DefaultPressure),
+                 "Override pressure value (int32).")
 
 	// Sample count flag - default to -1 to detect if it was passed
 	var sampleCountOverride int
-	flag.IntVarP(&sampleCountOverride, "samples", "n", -1, "Number of samples to simulate.")
+	flag.IntVarP(&sampleCountOverride,
+                 "samples",
+                 "n",
+                 -1,
+                 "Number of samples to simulate.")
 
 	// Filter type flag
 	var useMedian bool
-	flag.BoolVarP(&useMedian, "median", "m", false, "Use median filter instead of default (low_pass).")
+	flag.BoolVarP(&useMedian,
+		"median",
+		"m",
+		false,
+		"Use median filter instead of default (low_pass).")
 
 	// Random seed flag
 	var randomSeed bool
-	flag.BoolVarP(&randomSeed, "random-seed", "r", false, "Use time-based random seed (default is deterministic seed 0).")
+	flag.BoolVarP(&randomSeed,
+		"random-seed",
+		"r",
+		false,
+		"Use time-based random seed (default seed 0).")
 
 	flag.Parse()
 
@@ -75,27 +103,32 @@ func main() {
 	// Apply sample count override ONLY if it was passed
 	if flag.Lookup("samples").Changed {
 		config.Simulation.DefaultSamples = int32(sampleCountOverride)
-		fmt.Printf("Sample count override: %d\n", config.Simulation.DefaultSamples)
+		fmt.Printf("Sample count override: %d\n",
+                   config.Simulation.DefaultSamples)
 	} else {
-		fmt.Printf("Using config default samples: %d\n", config.Simulation.DefaultSamples)
+		fmt.Printf("Using config default samples: %d\n",
+                   config.Simulation.DefaultSamples)
 	}
 
 	// Apply Flow Override by rewriting the equation IF CHANGED from default
 	if flag.Lookup("flow-override-value").Changed {
 		config.Sensors.Flow.Equation = strconv.Itoa(flowVal)
-		fmt.Printf("Flow equation overridden to constant: %s\n", config.Sensors.Flow.Equation)
+		fmt.Printf("Flow equation overridden to constant: %s\n",
+                   config.Sensors.Flow.Equation)
 	}
 
 	// Apply Temperature Override by rewriting the equation
 	if flag.Lookup("temp-override-value").Changed {
 		config.Sensors.Temperature.Equation = strconv.Itoa(tempVal)
-		fmt.Printf("Temperature equation overridden to constant: %s\n", config.Sensors.Temperature.Equation)
+		fmt.Printf("Temperature equation overridden to constant: %s\n",
+                   config.Sensors.Temperature.Equation)
 	}
 
 	// Apply Pressure Override by rewriting the equation
 	if flag.Lookup("pressure-override-value").Changed {
 		config.Sensors.Pressure.Equation = strconv.Itoa(pressureVal)
-		fmt.Printf("Pressure equation overridden to constant: %s\n", config.Sensors.Pressure.Equation)
+		fmt.Printf("Pressure equation overridden to constant: %s\n",
+                   config.Sensors.Pressure.Equation)
 	}
 
 	// Determine Filter Type
@@ -118,12 +151,17 @@ func main() {
 	// Initialize Processor
 	processor := NewProcessor(config.Processing)
 	// Pre-populate filters with defaults/overrides
-	processor.InitializeFilters(int32(flowVal), int32(pressureVal), int32(tempVal))
+	processor.InitializeFilters(int32(flowVal),
+                                int32(pressureVal),
+                                int32(tempVal))
 	
 	// Initialize with defaults (which now come from flags/config)
 	processor.LatestTemperature = int32(tempVal)
 	processor.LatestPressure = int32(pressureVal)
-	fmt.Printf("Initial state: Temperature=%d, Pressure=%d, FlowRef=%d\n", processor.LatestTemperature, processor.LatestPressure, flowVal)
+	fmt.Printf("Initial state: Temperature=%d, Pressure=%d, FlowRef=%d\n",
+               processor.LatestTemperature,
+               processor.LatestPressure,
+               flowVal)
 
 	// Initialize Output Handler
 	outputHandler, err := GetOutputHandler(config.Output)
@@ -138,12 +176,22 @@ func main() {
 		"RefP": float64(config.Simulation.DefaultPressure),
 		"RefT": float64(config.Simulation.DefaultTemperature),
 	}
-	flowCh := StartSensor(FlowSensor, config.Sensors.Flow, refParams, baseSeed)
-	pressureCh := StartSensor(PressureSensor, config.Sensors.Pressure, refParams, baseSeed+1)
-	tempCh := StartSensor(TemperatureSensor, config.Sensors.Temperature, refParams, baseSeed+2)
+	flowCh := StartSensor(FlowSensor,
+                          config.Sensors.Flow,
+                          refParams,
+                          baseSeed)
+	pressureCh := StartSensor(PressureSensor,
+                              config.Sensors.Pressure,
+                              refParams,
+                              baseSeed+1)
+	tempCh := StartSensor(TemperatureSensor,
+                          config.Sensors.Temperature,
+                          refParams,
+                          baseSeed+2)
 
 	// Consume data
-	runSecs := time.Duration(config.Simulation.DefaultSamples / config.Sensors.Flow.FrequencyHz)
+	runSecs := time.Duration(config.Simulation.DefaultSamples /
+		config.Sensors.Flow.FrequencyHz)
 	timeout := time.After(runSecs*time.Second + 500*time.Millisecond)
 	startTime := time.Now()
 
@@ -169,7 +217,12 @@ func main() {
 			elapsed := data.Timestamp.Sub(startTime).Seconds()
 
 			// Calculate Final Flow using updated signature
-			calculated, err := processor.CalculateFlow(config.Processing.FlowEquation, data.Value, elapsed, refFlow, refPressure, refTemperature)
+			calculated, err := processor.CalculateFlow(config.Processing.FlowEquation,
+                                                       data.Value,
+                                                       elapsed,
+                                                       refFlow,
+                                                       refPressure,
+                                                       refTemperature)
 			if err != nil {
 				log.Printf("Error calculating flow: %v", err)
 				continue

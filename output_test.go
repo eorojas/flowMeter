@@ -10,7 +10,8 @@ import (
 func TestNetworkOutput(t *testing.T) {
 	// Create a test server
 	var receivedData OutputData
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
+                                 r *http.Request) {
 		if r.Method != "POST" {
 			t.Errorf("Expected POST request, got %s", r.Method)
 		}
@@ -43,9 +44,11 @@ func TestNetworkOutput(t *testing.T) {
 
 	// Verify received data
 	if receivedData.SampleNumber != 123 {
-		t.Errorf("Expected SampleNumber 123, got %d", receivedData.SampleNumber)
+		t.Errorf("Expected SampleNumber 123, got %d",
+                 receivedData.SampleNumber)
 	}
 	if receivedData.CalculatedFlow != 5000 {
-		t.Errorf("Expected CalculatedFlow 5000, got %d", receivedData.CalculatedFlow)
+		t.Errorf("Expected CalculatedFlow 5000, got %d",
+                 receivedData.CalculatedFlow)
 	}
 }

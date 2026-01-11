@@ -47,7 +47,8 @@ func SafeMul32(a, b int32) (int32, error) {
 	return int32(result), nil
 }
 
-// SafeDiv32 divides two int32 numbers and checks for overflow (only for MinInt32 / -1).
+// SafeDiv32 divides two int32 numbers and checks for /
+// overflow (only for MinInt32 / -1).
 func SafeDiv32(a, b int32) (int32, error) {
 	if b == 0 {
 		return 0, errors.New("division by zero")

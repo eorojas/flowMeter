@@ -11,7 +11,8 @@ type Filter interface {
 	Initialize(value int32) // Pre-populates the filter with a default value
 }
 
-// LowPassFilter implements an Exponential Moving Average (EMA) filter using integer math.
+// LowPassFilter implements an Exponential Moving Average (EMA)
+// filter using integer math.
 // It uses fixed-point arithmetic (scaled by 1024) to handle the alpha factor.
 type LowPassFilter struct {
 	AlphaScaled int32 // Alpha * 1024
@@ -53,9 +54,12 @@ func (f *LowPassFilter) Process(value int32) int32 {
 	return f.PrevValue
 }
 
-// MedianFilter implements a sliding window median filter using a maintained sorted slice.
-// It uses a ring buffer to track insertion order and a sorted buffer for O(1) median retrieval.
-// Complexity: O(N) per insert due to slice shifting (efficient for typical window sizes).
+// MedianFilter implements a sliding window median filter using a maintained
+// sorted slice.
+// It uses a ring buffer to track insertion order and a sorted buffer for O(1)
+// median retrieval.
+// Complexity: O(N) per insert due to slice shifting
+// (efficient for typical window sizes).
 type MedianFilter struct {
 	windowSize int
 	ringBuffer []int32 // Stores data in chronological order
@@ -95,7 +99,8 @@ func (f *MedianFilter) Process(value int32) int32 {
 	oldestValue := f.ringBuffer[f.head]
 	
 	// Binary search to find the index of the oldest value in 'sorted'
-	idx := sort.Search(len(f.sorted), func(i int) bool { return f.sorted[i] >= oldestValue })
+	idx := sort.Search(len(f.sorted),
+                       func(i int) bool { return f.sorted[i] >= oldestValue })
 	
 	// Standard Binary Search finds the *first* occurrence. 
 	if idx < len(f.sorted) && f.sorted[idx] == oldestValue {
@@ -110,7 +115,8 @@ func (f *MedianFilter) Process(value int32) int32 {
 
 	// 3. Insert new value into sorted slice while maintaining order
 	// Find insertion point
-	insertIdx := sort.Search(len(f.sorted), func(i int) bool { return f.sorted[i] >= value })
+	insertIdx := sort.Search(len(f.sorted),
+                             func(i int) bool { return f.sorted[i] >= value })
 	
 	// Extend slice
 	f.sorted = append(f.sorted, 0)
@@ -193,7 +199,8 @@ func (p *Processor) InitializeFilters(flowRef, pressRef, tempRef int32) {
 	}
 }
 
-// UpdatePressure processes a raw pressure value through filters and updates state.
+// UpdatePressure processes a raw pressure value through
+// filters and updates state.
 func (p *Processor) UpdatePressure(raw int32) {
 	val := raw
 	for _, f := range p.PressureFilters {
@@ -202,7 +209,8 @@ func (p *Processor) UpdatePressure(raw int32) {
 	p.LatestPressure = val
 }
 
-// UpdateTemperature processes a raw temperature value through filters and updates state.
+// UpdateTemperature processes a raw temperature value through
+// filters and updates state.
 func (p *Processor) UpdateTemperature(raw int32) {
 	val := raw
 	for _, f := range p.TemperatureFilters {
@@ -211,7 +219,8 @@ func (p *Processor) UpdateTemperature(raw int32) {
 	p.LatestTemperature = val
 }
 
-// ProcessFlow processes a raw flow value through filters and returns the filtered flow.
+// ProcessFlow processes a raw flow value through
+// filters and returns the filtered flow.
 func (p *Processor) ProcessFlow(raw int32) int32 {
 	val := raw
 	for _, f := range p.FlowFilters {
@@ -221,19 +230,29 @@ func (p *Processor) ProcessFlow(raw int32) int32 {
 }
 
 // CalculateFlow computes the final flow rate using the configured equation.
-// It uses the latest filtered pressure and temperature values from the processor state.
+// It uses the latest filtered pressure and
+// temperature values from the processor state.
 //
 // Assumptions:
-// 1. Input sensors (Flow, Pressure, Temperature) are within their configured bit-depths.
+// 1. Input sensors (Flow, Pressure, Temperature)
+//      are within their configured bit-depths.
 // 2. The provided equation results in a value that fits within int32 range.
-// 3. Intermediate floating-point calculations in the expression engine are used to handle
-//    scaling (e.g. / 255.0) but the final result is cast to int32 with overflow checking.
-func (p *Processor) CalculateFlow(equation string, rawFlow int32, timeSecs float64, refFlow int32, refPressure int32, refTemperature int32) (int32, error) {
+// 3. Intermediate floating-point calculations in the
+//    expression engine are used to handle
+//    scaling (e.g. / 255.0) but the final result is
+//    cast to int32 with overflow checking.
+func (p *Processor) CalculateFlow(equation string,
+                                  rawFlow int32,
+                                  timeSecs float64,
+                                  refFlow int32,
+                                  refPressure int32,
+                                  refTemperature int32) (int32, error) {
 	// Filter the raw flow first
 	filteredFlow := p.ProcessFlow(rawFlow)
 
 	// Prepare parameters
-	// We pass values as float64 to the engine to support division scaling (e.g. / 255.0)
+	// We pass values as float64 to the engine to
+    // support division scaling (e.g. / 255.0)
 	params := map[string]interface{}{
 		"flow":        float64(filteredFlow),
 		"pressure":    float64(p.LatestPressure),
@@ -263,3 +282,4 @@ func (p *Processor) CalculateFlow(equation string, rawFlow int32, timeSecs float
 
 	return int32(resultFloat), nil
 }
+

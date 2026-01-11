@@ -23,7 +23,10 @@ type SensorData struct {
 }
 
 // readSensorValue calculates the sensor value based on the equation and noise.
-func readSensorValue(config SensorConfig, startTime time.Time, params map[string]interface{}, r *rand.Rand) (int32, error) {
+func readSensorValue(config SensorConfig,
+                     startTime time.Time,
+                     params map[string]interface{},
+                     r *rand.Rand) (int32, error) {
 	elapsed := time.Since(startTime).Seconds()
 	
 	// Prepare parameters for the equation
@@ -50,23 +53,29 @@ func readSensorValue(config SensorConfig, startTime time.Time, params map[string
 	}
 	finalValue := baseValue + noise
 
-	// The values are derived from sensor inputs, which by design can only produce 
+	// The values are derived from sensor inputs,
+    // which by design can only produce 
 	// values within the specific range configured for that sensor's bit-depth.
 	// Therefore, explicit clamping here is unnecessary as the simulation 
-	// equations and noise distribution are calibrated to the sensor's physical limits.
+	// equations and noise distribution are calibrated to the
+    // sensor's physical limits.
 	return int32(finalValue), nil
 }
 
 // StartSensor starts a generic sensor simulation.
 // It returns a channel for that specific sensor type.
-func StartSensor(sType SensorType, config SensorConfig, params map[string]interface{}, seed int64) <-chan SensorData {
+func StartSensor(sType SensorType,
+				 config SensorConfig,
+				 params map[string]interface{},
+				 seed int64) <-chan SensorData {
 	ch := make(chan SensorData)
 	startTime := time.Now()
 	// Create local random source
 	r := rand.New(rand.NewSource(seed))
 
 	go func() {
-		ticker := time.NewTicker(time.Second / time.Duration(config.FrequencyHz))
+		ticker := time.NewTicker(time.Second /
+			time.Duration(config.FrequencyHz))
 		defer ticker.Stop()
 
 		for range ticker.C {

@@ -32,20 +32,26 @@ type SensorConfig struct {
 	ResolutionBits    int32   `json:"resolution_bits"`
 	Equation          string  `json:"equation"`
 	NoiseAmplitude    float64 `json:"noise_amplitude"`
-	NoiseDistribution string  `json:"noise_distribution,omitempty"` // "uniform" (default) or "normal"
+    // "uniform" (default) or "normal"
+	NoiseDistribution string  `json:"noise_distribution,omitempty"`
 }
 
 type ProcessingConfig struct {
 	FlowEquation      string         `json:"flow_equation"`
-	DefaultFilterType string         `json:"default_filter_type"` // "low_pass" or "median"
+    // "low_pass" or "median"
+	DefaultFilterType string         `json:"default_filter_type"`
 	Filters           []FilterConfig `json:"filters"`
 }
 
 type FilterConfig struct {
-	Type       string  `json:"type"`                  // e.g., "low_pass", "median"
-	Target     string  `json:"target"`                // e.g., "pressure"
-	Alpha      float64 `json:"alpha,omitempty"`       // For Low Pass
-	WindowSize int     `json:"window_size,omitempty"` // For Median
+    // e.g., "low_pass", "median"
+	Type       string  `json:"type"`
+    // e.g., "pressure"
+	Target     string  `json:"target"`
+    // For Low Pass
+	Alpha      float64 `json:"alpha,omitempty"`
+    // For Median
+	WindowSize int     `json:"window_size,omitempty"`
 }
 
 type OutputConfig struct {
@@ -75,18 +81,27 @@ func LoadConfig(filename string) (*Config, error) {
 
 // Validate checks configuration constraints.
 func (c *Config) Validate() error {
-	if c.Simulation.DefaultPressure < 10 || c.Simulation.DefaultPressure > 250 {
-		return fmt.Errorf("default_pressure must be between 10 and 250, got %d", c.Simulation.DefaultPressure)
+	if c.Simulation.DefaultPressure < 10 ||
+		c.Simulation.DefaultPressure > 250 {
+		return fmt.Errorf("default_pressure must be between 10 and 250, got %d",
+			c.Simulation.DefaultPressure)
 	}
-	if c.Simulation.DefaultTemperature < 10 || c.Simulation.DefaultTemperature > 250 {
-		return fmt.Errorf("default_temperature must be between 10 and 250, got %d", c.Simulation.DefaultTemperature)
+	if c.Simulation.DefaultTemperature < 10 ||
+		c.Simulation.DefaultTemperature > 250 {
+		return fmt.Errorf("default_temperature must be 10-250, got %d",
+			c.Simulation.DefaultTemperature)
 	}
-	if c.Simulation.DefaultFlow < 0 || c.Simulation.DefaultFlow > 16777215 {
-		return fmt.Errorf("default_flow must be within 24-bit unsigned range, got %d", c.Simulation.DefaultFlow)
+	if c.Simulation.DefaultFlow < 0 ||
+		c.Simulation.DefaultFlow > 16777215 {
+		return fmt.Errorf("default_flow must be within 24-bit range, got %d",
+			c.Simulation.DefaultFlow)
 	}
 	if c.Processing.DefaultFilterType != "" {
-		if c.Processing.DefaultFilterType != "low_pass" && c.Processing.DefaultFilterType != "median" {
-			return fmt.Errorf("default_filter_type must be 'low_pass' or 'median', got %s", c.Processing.DefaultFilterType)
+		if c.Processing.DefaultFilterType != "low_pass" &&
+			c.Processing.DefaultFilterType != "median" {
+			return fmt.Errorf("default_filter_type must be "+
+				"'low_pass' or 'median', got %s",
+				c.Processing.DefaultFilterType)
 		}
 	}
 	return nil

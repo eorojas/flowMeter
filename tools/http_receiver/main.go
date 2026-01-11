@@ -36,7 +36,11 @@ func main() {
 	defer writer.Flush()
 
 	// Write Header
-	header := []string{"sample_number", "raw_flow", "pressure", "temperature", "calculated_flow"}
+	header := []string{"sample_number",
+                       "raw_flow",
+                       "pressure",
+                       "temperature",
+                       "calculated_flow"}
 	if err := writer.Write(header); err != nil {
 		log.Fatalf("Failed to write CSV header: %v", err)
 	}
@@ -72,13 +76,20 @@ func main() {
 		writer.Flush()
 		mu.Unlock()
 
-		fmt.Printf("Received & Logged: Sample=%d, Flow=%d, P=%d, T=%d, Calc=%d\n",
-			data.SampleNumber, data.RawFlow, data.Pressure, data.Temperature, data.CalculatedFlow)
+		fmt.Printf("Received & Logged: " +
+			"Sample=%d, Flow=%d, P=%d, T=%d, Calc=%d\n",
+			data.SampleNumber,
+                   data.RawFlow,
+                   data.Pressure,
+                   data.Temperature,
+                   data.CalculatedFlow)
 
 		w.WriteHeader(http.StatusOK)
 	})
 
-	fmt.Printf("HTTP Receiver listening on %s (logging to %s)...\n", port, csvFile)
+	fmt.Printf("HTTP Receiver listening on %s (logging to %s)...\n",
+               port,
+               csvFile)
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}

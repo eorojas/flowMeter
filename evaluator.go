@@ -30,9 +30,11 @@ func getFunctions() map[string]govaluate.ExpressionFunction {
 }
 
 // EvaluateEquation parses and evaluates an equation with the given parameters.
-func EvaluateEquation(equation string, parameters map[string]interface{}) (float64, error) {
+func EvaluateEquation(equation string,
+	parameters map[string]interface{}) (float64, error) {
 	functions := getFunctions()
-	expression, err := govaluate.NewEvaluableExpressionWithFunctions(equation, functions)
+	expression, err := govaluate.NewEvaluableExpressionWithFunctions(
+		equation, functions)
 	if err != nil {
 		return 0, err
 	}
