@@ -91,23 +91,17 @@ func (f *MedianFilter) Initialize(value int32) {
 }
 
 func (f *MedianFilter) Process(value int32) int32 {
-	// 1. If full, remove the oldest value from the sorted slice
-	if f.count == f.windowSize {
-		oldestValue := f.ringBuffer[f.head]
-		
-		// Binary search to find the index of the oldest value in 'sorted'
-		// sort.Search returns the smallest index i such that f(i) is true.
-		idx := sort.Search(len(f.sorted), func(i int) bool { return f.sorted[i] >= oldestValue })
-		
-		// Standard Binary Search finds the *first* occurrence. 
-		// We verify we found it (we theoretically always should).
-		if idx < len(f.sorted) && f.sorted[idx] == oldestValue {
-			// Delete element at idx: copy(sorted[i:], sorted[i+1:])
-			copy(f.sorted[idx:], f.sorted[idx+1:])
-			f.sorted = f.sorted[:len(f.sorted)-1]
-		}
-	} else {
-		f.count++
+	// 1. Remove the oldest value from the sorted slice
+	oldestValue := f.ringBuffer[f.head]
+	
+	// Binary search to find the index of the oldest value in 'sorted'
+	idx := sort.Search(len(f.sorted), func(i int) bool { return f.sorted[i] >= oldestValue })
+	
+	// Standard Binary Search finds the *first* occurrence. 
+	if idx < len(f.sorted) && f.sorted[idx] == oldestValue {
+		// Delete element at idx: copy(sorted[i:], sorted[i+1:])
+		copy(f.sorted[idx:], f.sorted[idx+1:])
+		f.sorted = f.sorted[:len(f.sorted)-1]
 	}
 
 	// 2. Add the new value to the ring buffer (overwrite old)
