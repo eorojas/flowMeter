@@ -117,6 +117,9 @@ func main() {
 
 	// Initialize Processor
 	processor := NewProcessor(config.Processing)
+	// Pre-populate filters with defaults/overrides
+	processor.InitializeFilters(int32(flowVal), int32(pressureVal), int32(tempVal))
+	
 	// Initialize with defaults (which now come from flags/config)
 	processor.LatestTemperature = int32(tempVal)
 	processor.LatestPressure = int32(pressureVal)

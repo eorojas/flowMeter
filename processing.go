@@ -8,6 +8,7 @@ import (
 // Filter defines the interface for data filters using int32.
 type Filter interface {
 	Process(value int32) int32
+	Initialize(value int32) // Pre-populates the filter with a default value
 }
 
 // LowPassFilter implements an Exponential Moving Average (EMA) filter using integer math.
@@ -29,6 +30,11 @@ func NewLowPassFilter(alpha float64) *LowPassFilter {
 	return &LowPassFilter{
 		AlphaScaled: int32(alpha * 1024),
 	}
+}
+
+func (f *LowPassFilter) Initialize(value int32) {
+	f.PrevValue = value
+	f.Initialized = true
 }
 
 func (f *LowPassFilter) Process(value int32) int32 {
@@ -69,6 +75,19 @@ func NewMedianFilter(windowSize int) *MedianFilter {
 		head:       0,
 		count:      0,
 	}
+}
+
+func (f *MedianFilter) Initialize(value int32) {
+	for i := 0; i < f.windowSize; i++ {
+		f.ringBuffer[i] = value
+	}
+	// Reset sorted slice and fill with copies of value
+	f.sorted = make([]int32, f.windowSize)
+	for i := 0; i < f.windowSize; i++ {
+		f.sorted[i] = value
+	}
+	f.head = 0
+	f.count = f.windowSize
 }
 
 func (f *MedianFilter) Process(value int32) int32 {
@@ -165,6 +184,19 @@ func NewProcessor(config ProcessingConfig) *Processor {
 		}
 	}
 	return p
+}
+
+// InitializeFilters pre-populates all filters with reference values.
+func (p *Processor) InitializeFilters(flowRef, pressRef, tempRef int32) {
+	for _, f := range p.FlowFilters {
+		f.Initialize(flowRef)
+	}
+	for _, f := range p.PressureFilters {
+		f.Initialize(pressRef)
+	}
+	for _, f := range p.TemperatureFilters {
+		f.Initialize(tempRef)
+	}
 }
 
 // UpdatePressure processes a raw pressure value through filters and updates state.
