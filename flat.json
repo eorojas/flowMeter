@@ -1,0 +1,56 @@
+{
+  "simulation": {
+    "default_samples": 10000,
+    "default_pressure": 100,
+    "default_temperature": 100,
+    "default_flow": 8000000
+  },
+  "sensors": {
+    "flow": {
+      "frequency_hz": 100,
+      "resolution_bits": 24,
+      "equation": "RefF + t * 100",
+      "noise_amplitude": 0.0,
+      "noise_distribution": "normal"
+    },
+    "pressure": {
+      "frequency_hz": 10,
+      "resolution_bits": 8,
+      "equation": "RefP + 0",
+      "noise_amplitude": 0.0
+    },
+    "temperature": {
+      "frequency_hz": 10,
+      "resolution_bits": 8,
+      "equation": "RefT + 0",
+      "noise_amplitude": 0.0
+    }
+  },
+  "processing": {
+    "flow_equation": "F + F * ((P - RefP) / 255) * ((T - RefT) / 255)",
+    "default_filter_type": "low_pass",
+    "filters": [
+      {
+        "type": "median",
+        "target": "pressure",
+        "alpha": 0.1,
+        "window_size": 7
+      },
+      {
+        "type": "median",
+        "target": "temperature",
+        "window_size": 7
+      },
+      {
+        "type": "median",
+        "target": "flow",
+        "alpha": 0.2,
+        "window_size": 11
+      }
+    ]
+  },
+  "output": {
+    "type": "file", 
+    "target": "flat.csv"
+  }
+}
