@@ -47,10 +47,15 @@ func (f *LowPassFilter) Process(value int32) int32 {
 	return f.PrevValue
 }
 
-// MedianFilter implements a simple sliding window median filter for int32.
+// MedianFilter implements a sliding window median filter using a maintained sorted slice.
+// It uses a ring buffer to track insertion order and a sorted buffer for O(1) median retrieval.
+// Complexity: O(N) per insert due to slice shifting (efficient for typical window sizes).
 type MedianFilter struct {
-	WindowSize int
-	Buffer     []int32
+	windowSize int
+	ringBuffer []int32 // Stores data in chronological order
+	sorted     []int32 // Stores data in numerical order
+	head       int     // Current index in ringBuffer
+	count      int     // Current number of elements
 }
 
 func NewMedianFilter(windowSize int) *MedianFilter {
@@ -58,36 +63,61 @@ func NewMedianFilter(windowSize int) *MedianFilter {
 		windowSize = 5 // Default value
 	}
 	return &MedianFilter{
-		WindowSize: windowSize,
-		Buffer:     make([]int32, 0, windowSize),
+		windowSize: windowSize,
+		ringBuffer: make([]int32, windowSize),
+		sorted:     make([]int32, 0, windowSize),
+		head:       0,
+		count:      0,
 	}
 }
 
 func (f *MedianFilter) Process(value int32) int32 {
-	// Add new value
-	f.Buffer = append(f.Buffer, value)
-	if len(f.Buffer) > f.WindowSize {
-		// Keep the last WindowSize elements
-		f.Buffer = f.Buffer[1:]
+	// 1. If full, remove the oldest value from the sorted slice
+	if f.count == f.windowSize {
+		oldestValue := f.ringBuffer[f.head]
+		
+		// Binary search to find the index of the oldest value in 'sorted'
+		// sort.Search returns the smallest index i such that f(i) is true.
+		idx := sort.Search(len(f.sorted), func(i int) bool { return f.sorted[i] >= oldestValue })
+		
+		// Standard Binary Search finds the *first* occurrence. 
+		// We verify we found it (we theoretically always should).
+		if idx < len(f.sorted) && f.sorted[idx] == oldestValue {
+			// Delete element at idx: copy(sorted[i:], sorted[i+1:])
+			copy(f.sorted[idx:], f.sorted[idx+1:])
+			f.sorted = f.sorted[:len(f.sorted)-1]
+		}
+	} else {
+		f.count++
 	}
 
-	// Create a copy to sort
-	sorted := make([]int32, len(f.Buffer))
-	copy(sorted, f.Buffer)
-	
-	// Custom sort for int32 since sort.Ints is for int
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+	// 2. Add the new value to the ring buffer (overwrite old)
+	f.ringBuffer[f.head] = value
+	f.head = (f.head + 1) % f.windowSize
 
-	n := len(sorted)
+	// 3. Insert new value into sorted slice while maintaining order
+	// Find insertion point
+	insertIdx := sort.Search(len(f.sorted), func(i int) bool { return f.sorted[i] >= value })
+	
+	// Extend slice
+	f.sorted = append(f.sorted, 0)
+	// Shift elements right to make room
+	copy(f.sorted[insertIdx+1:], f.sorted[insertIdx:])
+	// Insert
+	f.sorted[insertIdx] = value
+
+	// 4. Return Median
+	n := len(f.sorted)
 	if n == 0 {
 		return 0
 	}
 	mid := n / 2
 	if n%2 == 0 {
-		// Integer average
-		return (sorted[mid-1] + sorted[mid]) / 2
+		// Even: Average of two middle elements
+		return (f.sorted[mid-1] + f.sorted[mid]) / 2
 	}
-	return sorted[mid]
+	// Odd: Middle element
+	return f.sorted[mid]
 }
 
 // Processor maintains the state of the sensors and applies filters.
